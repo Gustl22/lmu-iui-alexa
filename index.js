@@ -2,60 +2,80 @@
 // Please visit https://alexa.design/cookbook for additional examples on implementing slots, dialog management,
 // session persistence, api calls, and more.
 const Alexa = require('ask-sdk-core');
+const Products = require("./products");
+const config = require("./config.json");
 
-//Connection to DB
-//var mysql = require('mysql');
-
-/*var con = mysql.createConnection({
-//   host: "138.246.2.124:8889",
-//   user: "alexa",
-//   password: "alexa",
-//   database: "vendorMachine"
-  
-  host: 'www.reb0.org:3306',
-  user: 'iui',
-  password: '8tgcpFFAcPZRKj4L',
-  database: "vendorMachine"
-  
 //jdbc:mariadb://www.reb0.org:3306
 //Url: https://www.reb0.org/phpmyadmin
-
-
+const mariadb = require('mariadb');
+const pool = mariadb.createPool({
+    host: config.host,
+    port: config.port,
+    user: config.user,
+    password: config.password,
+    database: config.database
 });
 
-con.connect(function(err) {
-  if (err) throw err;
-  console.log("Connected!");
-  con.query("SELECT name FROM product",function (err, result, fields) {
-    if (err) throw err;
-    console.log(result);
-    
-  });
-  con.end();
-});*/
-//------------------
+var buyingProcess = false;
 
-function getPrice(product) {
-    return 'It costs' + getPriceFromDB(product);
+
+async function getPrice(search) {
+    let product = await getProduct(search);
+    if (product) {
+        return 'It costs ' + product.price + ' €. ';
+    } else {
+        return "We don't sell this product. ";
+    }
 }
 
-function getPriceFromDB(product) {
-    /*con.query(
-            `SELECT price FROM product WHERE name=${product}`,function (err, result, fields) {
-            return result;
-            });*/
-            switch(product) {
-                case "cola":
-                    return '1,95 €';
-                case 'snickers':
-                    return '0.90 €';
-                default:
-                    return product + 'not known';
-            }
-}
-        
+async function getProduct(search) {
+    let conn;
+    const sql = `SELECT * FROM product WHERE LOWER(name) LIKE '${search}' LIMIT 1`;
+    try {
+        conn = await pool.getConnection();
+        const res = await conn.query(sql);
+        return res[0];
+    } catch (err) {
+        throw err;
+    } finally {
+        if (conn)
+            await conn.end();
+    }
+    return false;
 
-        
+    // for (let key in Products) {
+    //     let product = Products[key];
+    //     // console.log(product);
+    //     // for(let prop in product) {
+    //     //     res = res + prop + ';';
+    //     // }
+    //     if (product.hasOwnProperty('name')) {
+    //         // res = res + product.name + ';';
+    //         if (product.name.toLowerCase() === search) {
+    //             return product.price;
+    //         }
+    //     }
+    // }
+    // return false;
+}
+
+function getProductsWithType(type) {
+    let productList = [];
+    //let productList = type;
+    /*switch (type){
+       case 1: type = 'food';
+       case 2: type = 'drink';
+   }  */
+
+    for (var key in Products) {
+        let product = Products[key];
+        if (product.categories[0] === type) {
+            //productList = product.name;
+            productList.push(product.name);
+        }
+    }//)
+    return productList;
+}
 
 
 const LaunchRequestHandler = {
@@ -68,6 +88,7 @@ const LaunchRequestHandler = {
             .speak(speakOutput)
             .reprompt(speakOutput)
             .getResponse();
+
     }
 };
 const WantToBuySomethingIntentHandler = {
@@ -76,9 +97,7 @@ const WantToBuySomethingIntentHandler = {
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'Want_to_buy_something';
     },
     handle(handlerInput) {
-        let aisystem = handlerInput.requestEnvelope.request.intent.slots.aiassistant.value;
-        //const speakOutput = AIsystem[aisystem].preis + "Do you want to know more?";
-        const speakOutput = 'Hello World!';
+        const speakOutput = 'We offer drinks and snacks. Are you hungry or thirsty?';
         return handlerInput.responseBuilder
             .speak(speakOutput)
             //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
@@ -86,15 +105,34 @@ const WantToBuySomethingIntentHandler = {
     }
 };
 
+
 const BuyIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'BuyIntent';
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'BuyIntent'
+            && handlerInput.requestEnvelope.request.intent.slots.product;
+    },
+    async handle(handlerInput) {
+        let product = handlerInput.requestEnvelope.request.intent.slots.product.value;
+        const speakOutput = await getPrice(product) + "Do you want to buy it?";
+        var buyingProcess = true;
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .getResponse();
+    }
+};
+
+const CategoryOfDecisionIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'category_of_decision';
     },
     handle(handlerInput) {
-        let aisystem = handlerInput.requestEnvelope.request.intent.slots.product.value;
-        const speakOutput = getPrice(aisystem) + "Do you want to buy it?";
-        //const speakOutput = 'Hello World!';
+        let aisystem = handlerInput.requestEnvelope.request.intent.slots.category_of_product.value;
+        /*if (aisystem === 1) var prodType = 'snacks';
+         if (aisystem === 2) prodType = "drinks";*/
+        const speakOutput = 'We offer the following ${prodType}: ' + getProductsWithType(aisystem) + "Which do you choose?";
         return handlerInput.responseBuilder
             .speak(speakOutput)
             //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
@@ -167,7 +205,7 @@ const ErrorHandler = {
     },
     handle(handlerInput, error) {
         console.log(`~~~~ Error handled: ${error.stack}`);
-        const speakOutput = `Sorry, I had trouble doing what you asked. Please try again.`;
+        const speakOutput = `Sorry, I had trouble doing what you asked. Please try again.` + error;
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -184,6 +222,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         LaunchRequestHandler,
         BuyIntentHandler,
         WantToBuySomethingIntentHandler,
+        CategoryOfDecisionIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
@@ -193,7 +232,3 @@ exports.handler = Alexa.SkillBuilders.custom()
         ErrorHandler,
     )
     .lambda();
-    
-    
-
-

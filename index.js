@@ -2,7 +2,7 @@
 // Please visit https://alexa.design/cookbook for additional examples on implementing slots, dialog management,
 // session persistence, api calls, and more.
 const Alexa = require('ask-sdk-core');
-const Products = require("./products");
+// const Products = require("./products");
 const config = require("./config.json");
 
 //jdbc:mariadb://www.reb0.org:3306
@@ -21,27 +21,18 @@ var buyingProcess = false;
 
 async function getPrice(search) {
     let product = await getProduct(search);
+    console.log(search);
+    console.log(product);
     if (product) {
-        return 'It costs ' + product.price + ' €. ';
+        return 'It costs ' + product.price + ' €. ' + "Do you want to buy it?";
     } else {
-        return "We don't sell this product. ";
+        return "Sorry, we don't sell this product. ";
     }
 }
 
 async function getProduct(search) {
-    let conn;
     const sql = `SELECT * FROM product WHERE LOWER(name) LIKE '${search}' LIMIT 1`;
-    try {
-        conn = await pool.getConnection();
-        const res = await conn.query(sql);
-        return res[0];
-    } catch (err) {
-        throw err;
-    } finally {
-        if (conn)
-            await conn.end();
-    }
-    return false;
+    return (await query(sql))[0];
 
     // for (let key in Products) {
     //     let product = Products[key];
@@ -59,22 +50,48 @@ async function getProduct(search) {
     // return false;
 }
 
-function getProductsWithType(type) {
-    let productList = [];
+async function getProductsWithCategory(category) {
+    const sql = `SELECT p.name, p.product_ID, p.brand, p.price, p.quantity, p.energy, p.weight, p.state
+FROM product p
+JOIN product_category pc ON p.product_ID = pc.productID 
+JOIN category c ON pc.categoryID = c.categoryID
+WHERE c.name = '${category}'`;
+    return await query(sql);
+
+    // let productList = [];
     //let productList = type;
     /*switch (type){
        case 1: type = 'food';
        case 2: type = 'drink';
    }  */
 
-    for (var key in Products) {
-        let product = Products[key];
-        if (product.categories[0] === type) {
-            //productList = product.name;
-            productList.push(product.name);
-        }
-    }//)
-    return productList;
+    // for (var key in Products) {
+    //     let product = Products[key];
+    //     if (product.categories[0] === category) {
+    //         //productList = product.name;
+    //         productList.push(product.name);
+    //     }
+    // }
+    // return productList;
+}
+
+/**
+ * Query the mariadb database
+ * @param sql
+ * @returns {Promise<boolean|any>}
+ */
+async function query(sql){
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        return await conn.query(sql);
+    } catch (err) {
+        throw err;
+    } finally {
+        if (conn)
+            await conn.end();
+    }
+    return false;
 }
 
 
@@ -113,8 +130,9 @@ const BuyIntentHandler = {
             && handlerInput.requestEnvelope.request.intent.slots.product;
     },
     async handle(handlerInput) {
+        // TODO allow every product in db
         let product = handlerInput.requestEnvelope.request.intent.slots.product.value;
-        const speakOutput = await getPrice(product) + "Do you want to buy it?";
+        const speakOutput = await getPrice(product);
         var buyingProcess = true;
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -128,11 +146,15 @@ const CategoryOfDecisionIntentHandler = {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'category_of_decision';
     },
-    handle(handlerInput) {
+    async handle(handlerInput) {
         let aisystem = handlerInput.requestEnvelope.request.intent.slots.category_of_product.value;
+        let slotName = handlerInput.requestEnvelope.request.intent.slots.category_of_product.resolutions.resolutionsPerAuthority[0].values[0].value.name;
         /*if (aisystem === 1) var prodType = 'snacks';
          if (aisystem === 2) prodType = "drinks";*/
-        const speakOutput = 'We offer the following ${prodType}: ' + getProductsWithType(aisystem) + "Which do you choose?";
+        const products = await getProductsWithCategory(slotName);
+        // Extract product name, implode the array, and replace & with and, as alexa doesn't understand &.
+        const productsStr = products.map(product => product.name).join(', ').replace('&', ' and ');
+        const speakOutput = `We offer the following ${slotName}: ` + productsStr + " Which do you choose?";
         return handlerInput.responseBuilder
             .speak(speakOutput)
             //.reprompt('add a reprompt if you want to keep the session open for the user to respond')

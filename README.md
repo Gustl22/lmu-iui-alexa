@@ -1,5 +1,7 @@
 ## Local Alexa Skill
 
+Insert `config.json` in root folder.
+
 Follow instructions on :
 https://www.npmjs.com/package/alexa-skill-local
 

@@ -24,7 +24,8 @@ async function getPrice(search) {
     console.log(search);
     console.log(product);
     if (product) {
-        return 'It costs ' + product.price + ' €. ' + "Do you want to buy it?";
+        //return 'It costs ' + product.price + ' €. ' + "Do you want to buy it?";
+        return 'It costs ' + product.price + ' €. ';
     } else {
         return "Sorry, we don't sell this product. ";
     }
@@ -80,7 +81,7 @@ WHERE c.name = '${category}'`;
  * @param sql
  * @returns {Promise<boolean|any>}
  */
-async function query(sql){
+async function query(sql) {
     let conn;
     try {
         conn = await pool.getConnection();
@@ -110,8 +111,8 @@ const LaunchRequestHandler = {
 };
 const WantToBuySomethingIntentHandler = {
     canHandle(handlerInput) {
-        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'Want_to_buy_something';
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'Want_to_buy_something';
     },
     handle(handlerInput) {
         const speakOutput = 'We offer drinks and snacks. Are you hungry or thirsty?';
@@ -125,9 +126,9 @@ const WantToBuySomethingIntentHandler = {
 
 const BuyIntentHandler = {
     canHandle(handlerInput) {
-        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'BuyIntent'
-            && handlerInput.requestEnvelope.request.intent.slots.product;
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'BuyIntent' &&
+            handlerInput.requestEnvelope.request.intent.slots.product;
     },
     async handle(handlerInput) {
         // TODO allow every product in db
@@ -135,6 +136,11 @@ const BuyIntentHandler = {
         const speakOutput = await getPrice(product);
         var buyingProcess = true;
         return handlerInput.responseBuilder
+            .addDelegateDirective({
+                name: 'consent',
+                confirmationStatus: 'NONE',
+                slots: {}
+            })
             .speak(speakOutput)
             //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
             .getResponse();
@@ -143,29 +149,56 @@ const BuyIntentHandler = {
 
 const CategoryOfDecisionIntentHandler = {
     canHandle(handlerInput) {
-        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'category_of_decision';
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'category_of_decision';
     },
     async handle(handlerInput) {
-        let aisystem = handlerInput.requestEnvelope.request.intent.slots.category_of_product.value;
+        //let aisystem = handlerInput.requestEnvelope.request.intent.slots.category_of_product.value;
         let slotName = handlerInput.requestEnvelope.request.intent.slots.category_of_product.resolutions.resolutionsPerAuthority[0].values[0].value.name;
         /*if (aisystem === 1) var prodType = 'snacks';
          if (aisystem === 2) prodType = "drinks";*/
         const products = await getProductsWithCategory(slotName);
         // Extract product name, implode the array, and replace & with and, as alexa doesn't understand &.
         const productsStr = products.map(product => product.name).join(', ').replace('&', ' and ');
-        const speakOutput = `We offer the following ${slotName}: ` + productsStr + " Which do you choose?";
+        const speakOutput = `We offer the following ${slotName}: ` + productsStr + ". Which do you choose?";
         return handlerInput.responseBuilder
+
             .speak(speakOutput)
             //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
             .getResponse();
     }
 };
 
+const ConsentIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'consent';
+    },
+    handle(handlerInput) {
+
+        speakOutput = "No confirmation"
+
+        var confirm = handlerInput.requestEnvelope.request.intent.confirmationStatus;
+        console.log(confirm);
+
+        if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'DENIED')
+            speakOutput = 'Choose something else';
+        if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED')
+            speakOutput = 'You bought it. Bon appetit!';
+
+
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
 const HelpIntentHandler = {
     canHandle(handlerInput) {
-        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
     },
     handle(handlerInput) {
         const speakOutput = 'You can say hello to me! How can I help?';
@@ -178,9 +211,9 @@ const HelpIntentHandler = {
 };
 const CancelAndStopIntentHandler = {
     canHandle(handlerInput) {
-        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.CancelIntent'
-                || Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.StopIntent');
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            (Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.CancelIntent' ||
+                Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.StopIntent');
     },
     handle(handlerInput) {
         const speakOutput = 'Goodbye!';
@@ -245,6 +278,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         BuyIntentHandler,
         WantToBuySomethingIntentHandler,
         CategoryOfDecisionIntentHandler,
+        ConsentIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,

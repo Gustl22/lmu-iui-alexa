@@ -101,7 +101,7 @@ const LaunchRequestHandler = {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     handle(handlerInput) {
-        const speakOutput = 'Welcome to our vending machine!';
+        const speakOutput = 'Welcome to our vending machine daria!';
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
@@ -134,7 +134,6 @@ const BuyIntentHandler = {
         // TODO allow every product in db
         let product = handlerInput.requestEnvelope.request.intent.slots.product.value;
         const speakOutput = await getPrice(product);
-        var buyingProcess = true;
         return handlerInput.responseBuilder
             .addDelegateDirective({
                 name: 'consent',
@@ -165,6 +164,21 @@ const CategoryOfDecisionIntentHandler = {
 
             .speak(speakOutput)
             //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .getResponse();
+    }
+};
+
+const HowMuchIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'CostsIntent';
+    },
+    async handle(handlerInput) {
+        let slotName = handlerInput.requestEnvelope.request.intent.slots.product.value;
+        speakOutput = await getPrice(slotName);
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
             .getResponse();
     }
 };
@@ -278,6 +292,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         BuyIntentHandler,
         WantToBuySomethingIntentHandler,
         CategoryOfDecisionIntentHandler,
+        HowMuchIntentHandler,
         ConsentIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,

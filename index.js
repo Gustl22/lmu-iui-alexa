@@ -112,7 +112,7 @@ const LaunchRequestHandler = {
 const WantToBuySomethingIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
-            Alexa.getIntentName(handlerInput.requestEnvelope) === 'Want_to_buy_something';
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'AdviceIntent';
     },
     handle(handlerInput) {
         const speakOutput = 'We offer drinks and snacks. Are you hungry or thirsty?';
@@ -176,7 +176,7 @@ const ConsentIntentHandler = {
     },
     handle(handlerInput) {
 
-        speakOutput = "No confirmation"
+        speakOutput = "No confirmation";
 
         var confirm = handlerInput.requestEnvelope.request.intent.confirmationStatus;
         console.log(confirm);

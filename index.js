@@ -105,6 +105,7 @@ const LaunchRequestHandler = {
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
+            .withSimpleCard("Welcome to our vending machine!", "You can say \"I am hungry\" or choose a specific product. For advice you can say \"I want to buy something\".")
             .getResponse();
 
     }
@@ -118,7 +119,8 @@ const WantToBuySomethingIntentHandler = {
         const speakOutput = 'We offer drinks and snacks. Are you hungry or thirsty?';
         return handlerInput.responseBuilder
             .speak(speakOutput)
-            //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .reprompt(speakOutput)
+            .withSimpleCard("ttest.", "just a test.")
             .getResponse();
     }
 };
@@ -142,7 +144,8 @@ const BuyIntentHandler = {
                 slots: {}
             })
             .speak(speakOutput)
-            //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .withSimpleCard("test title", "test text")
             .getResponse();
     }
 };
@@ -164,6 +167,8 @@ const CategoryOfDecisionIntentHandler = {
         return handlerInput.responseBuilder
 
             .speak(speakOutput)
+            .reprompt(speakOutput)
+            .withSimpleCard(`We offer the following ${slotName}: `, productsStr )
             //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
             .getResponse();
     }
@@ -246,7 +251,7 @@ const IntentReflectorHandler = {
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
-            //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .reprompt('add a reprompt if you want to keep the session open for the user to respond')
             .getResponse();
     }
 };

@@ -213,7 +213,7 @@
           ]
         },
         {
-          "name": "more_choice",
+          "name": "ChoiceIntent",
           "confirmationRequired": false,
           "prompts": {},
           "slots": [

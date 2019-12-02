@@ -2,6 +2,7 @@
 // Please visit https://alexa.design/cookbook for additional examples on implementing slots, dialog management,
 // session persistence, api calls, and more.
 const Alexa = require('ask-sdk-core');
+const fetch = require("node-fetch");
 // const Products = require("./products");
 const config = require("./config.json");
 
@@ -100,8 +101,10 @@ const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
-    handle(handlerInput) {
-        const speakOutput = 'Welcome to our vending machine daria!';
+    async handle(handlerInput) {
+        let speakOutput = 'Welcome to our vending machine!';
+        const emotion = await getEmotion();
+        speakOutput += ' Looks like you are ' + emotion + '!';
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
@@ -110,6 +113,53 @@ const LaunchRequestHandler = {
 
     }
 };
+
+async function getEmotion() {
+    try {
+        const face = await postData('http://localhost:3002/api/face/load');
+        if(face.hasOwnProperty('expressions')) {
+            let max = 0;
+            let expressionMax = 'undefined';
+
+            for (let expression in face.expressions) {
+                let val = face.expressions[expression];
+                if (val > max) {
+                    max = val;
+                    expressionMax = expression;
+                }
+            }
+
+            return expressionMax;
+        }
+    } catch (e) {
+        throw "Maybe you haven't turned on the face detection server." + e.message;
+    }
+
+    return 'neutral';
+}
+
+async function postData(url = '', data = {}) {
+    // Default options are marked with *
+    const response = await fetch(url, {
+        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        mode: 'cors', // no-cors, *cors, same-origin
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, *same-origin, omit
+        headers: {
+            'Content-Type': 'application/json'
+            // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: 'follow', // manual, *follow, error
+        referrer: 'no-referrer', // no-referrer, *client
+        body: JSON.stringify(data) // body data type must match "Content-Type" header
+    });
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+        return await response.json() // parses JSON response into native JavaScript objects
+    }
+    return response;
+}
+
 const WantToBuySomethingIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&

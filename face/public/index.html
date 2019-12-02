@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Face detection and emotion recognition</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+    <video id="video" width="720" height="560" autoplay muted></video>
+
+    <script defer src="/scripts/face-api.js/dist/face-api.min.js"></script>
+    <script defer src="face.js"></script>
+</body>
+</html>

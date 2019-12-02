@@ -10,8 +10,6 @@ $ npm install
 $ npm install -g alexa-skill-local
 ```
 
-Start local alexa lambda:
+Start local alexa lambda with `npm start` or `alexa-skill-local`.
 
-```
-$ alexa-skill-local
-```
+Open second terminal and start face detection sever with `npm start --prefix face`.

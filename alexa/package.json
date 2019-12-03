@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start" : "alexa-skill-local"
+    "start": "alexa-skill-local"
   },
   "author": "Amazon Alexa, Daria Fakhrutdinova, Sophia Selle, August Oberhauser",
   "license": "ISC",

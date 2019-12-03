@@ -38,12 +38,20 @@ app.post('/api/face/load', async function(req, res) {
     await res.json(data);
 });
 
+/**
+ * Cache data for later use.
+ *
+ * @type {Array}
+ */
+const cache = [];
 
 async function saveState(name, object) {
-    await fs.writeFile(`/tmp/state-${name}.json`, JSON.stringify(object));
+    cache[name] = object;
+    // await fs.writeFile(__dirname + `/tmp/state-${name}.json`, JSON.stringify(object));
 }
 
 async function loadState(name) {
-    const data = await fs.readFile(`/tmp/state-${name}.json`);
-    return JSON.parse(data);
+    // const data = await fs.readFile(__dirname + `/tmp/state-${name}.json`);
+    // return JSON.parse(data);
+    return cache[name];
 }

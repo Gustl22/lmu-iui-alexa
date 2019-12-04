@@ -117,7 +117,7 @@ const LaunchRequestHandler = {
 async function getEmotion() {
     try {
         const face = await postData('http://localhost:3002/api/face/load');
-        if(face.hasOwnProperty('expressions')) {
+        if (face.hasOwnProperty('expressions')) {
             let max = 0;
             let expressionMax = 'undefined';
 
@@ -147,7 +147,7 @@ async function postData(url = '', data = {}) {
         credentials: 'same-origin', // include, *same-origin, omit
         headers: {
             'Content-Type': 'application/json'
-            // 'Content-Type': 'application/x-www-form-urlencoded',
+                // 'Content-Type': 'application/x-www-form-urlencoded',
         },
         redirect: 'follow', // manual, *follow, error
         referrer: 'no-referrer', // no-referrer, *client
@@ -217,7 +217,7 @@ const CategoryOfDecisionIntentHandler = {
 
             .speak(speakOutput)
             .reprompt(speakOutput)
-            .withSimpleCard(`We offer the following ${slotName}: `, productsStr )
+            .withSimpleCard(`We offer the following ${slotName}: `, productsStr)
             //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
             .getResponse();
     }
@@ -251,11 +251,30 @@ const ConsentIntentHandler = {
         console.log(confirm);
 
         if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'DENIED')
-            speakOutput = 'Choose something else';
+            speakOutput = "It's a pity! Then choose something else";
         if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED')
             speakOutput = 'You bought it. Bon appetit!';
 
 
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
+const StopIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'StopIntent';
+    },
+    handle(handlerInput) {
+
+        if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'DENIED')
+            speakOutput = "Then thank you for your purchase! Come back!";
+        if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED')
+            speakOutput = "Okay, I return your money";
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -349,6 +368,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         CategoryOfDecisionIntentHandler,
         HowMuchIntentHandler,
         ConsentIntentHandler,
+        StopIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,

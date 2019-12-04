@@ -1,244 +1,245 @@
 {
-  "interactionModel": {
-    "languageModel": {
-      "invocationName": "vending machine",
-      "intents": [
-        {
-          "name": "AMAZON.FallbackIntent",
-          "samples": []
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "vending machine daria",
+            "intents": [{
+                    "name": "AMAZON.FallbackIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AdviceIntent",
+                    "slots": [],
+                    "samples": [
+                        "I want something",
+                        "I don't know what to buy",
+                        "What do you offer",
+                        "What do you have",
+                        "What can I buy",
+                        "I want to buy something"
+                    ]
+                },
+                {
+                    "name": "BuyIntent",
+                    "slots": [{
+                            "name": "product",
+                            "type": "product"
+                        },
+                        {
+                            "name": "amazon_food",
+                            "type": "AMAZON.Food"
+                        },
+                        {
+                            "name": "amazon_drink",
+                            "type": "AMAZON.Drink"
+                        }
+                    ],
+                    "samples": [
+                        "I want {amazon_food} {amazon_drink} {product}",
+                        "Give me a {product}",
+                        "I want a {product}",
+                        "I get a {product}",
+                        "I want to buy {product}"
+                    ]
+                },
+                {
+                    "name": "CostsIntent",
+                    "slots": [{
+                        "name": "product",
+                        "type": "product"
+                    }],
+                    "samples": [
+                        "What is the price of {product}",
+                        "how expensive is {product}",
+                        "how much is {product}",
+                        "how much costs a {product}",
+                        "how much costs {product}"
+                    ]
+                },
+                {
+                    "name": "category_of_decision",
+                    "slots": [{
+                        "name": "category_of_product",
+                        "type": "category_of_product"
+                    }],
+                    "samples": [
+                        "I am {category_of_product}",
+                        "I want {category_of_product}"
+                    ]
+                },
+                {
+                    "name": "ChoiceIntent",
+                    "slots": [{
+                        "name": "subcategory",
+                        "type": "subcategory"
+                    }],
+                    "samples": [
+                        "I want {subcategory}"
+                    ]
+                },
+                {
+                    "name": "StopIntent",
+                    "slots": [],
+                    "samples": [
+                        "I want my money back",
+                        "No I don't want to buy that",
+                        "No I don't want to buy this",
+                        "I didn't want that"
+                    ]
+                },
+                {
+                    "name": "consent",
+                    "slots": [{
+                        "name": "product",
+                        "type": "product"
+                    }],
+                    "samples": [
+                        "I want to pay for {product}"
+                    ]
+                }
+            ],
+            "types": [{
+                    "name": "product",
+                    "values": [{
+                            "name": {
+                                "value": "Snickers"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Cola",
+                                "synonyms": [
+                                    "Coca-Cola"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "category_of_product",
+                    "values": [{
+                            "id": "1",
+                            "name": {
+                                "value": "drink",
+                                "synonyms": [
+                                    "to drink",
+                                    "beverages",
+                                    "beverage",
+                                    "thirsty",
+                                    "drinks",
+                                    "something to drink"
+                                ]
+                            }
+                        },
+                        {
+                            "id": "2",
+                            "name": {
+                                "value": "food",
+                                "synonyms": [
+                                    "eat",
+                                    "to eat",
+                                    "snack",
+                                    "snacks",
+                                    "hungry",
+                                    "something to eat"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "subcategory",
+                    "values": [{
+                            "name": {
+                                "value": "salty snacks"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "chocolate"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "water"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "beer"
+                            }
+                        }
+                    ]
+                }
+            ]
         },
-        {
-          "name": "AMAZON.CancelIntent",
-          "samples": []
+        "dialog": {
+            "intents": [{
+                    "name": "consent",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.1537309296967"
+                    },
+                    "slots": [{
+                        "name": "product",
+                        "type": "product",
+                        "confirmationRequired": false,
+                        "elicitationRequired": false,
+                        "prompts": {}
+                    }]
+                },
+                {
+                    "name": "ChoiceIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [{
+                        "name": "subcategory",
+                        "type": "subcategory",
+                        "confirmationRequired": false,
+                        "elicitationRequired": false,
+                        "prompts": {}
+                    }]
+                },
+                {
+                    "name": "StopIntent",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.1213643633892"
+                    },
+                    "slots": []
+                }
+            ],
+            "delegationStrategy": "ALWAYS"
         },
-        {
-          "name": "AMAZON.HelpIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.StopIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.NavigateHomeIntent",
-          "samples": []
-        },
-        {
-          "name": "AdviceIntent",
-          "slots": [],
-          "samples": [
-            "I want something",
-            "I don't know what to buy",
-            "What do you offer",
-            "What do you have",
-            "What can I buy",
-            "I want to buy something"
-          ]
-        },
-        {
-          "name": "BuyIntent",
-          "slots": [
-            {
-              "name": "product",
-              "type": "product"
-            }
-          ],
-          "samples": [
-            "I want {product}",
-            "Give me a {product}",
-            "I want a {product}",
-            "I get a {product}",
-            "I want to buy {product}"
-          ]
-        },
-        {
-          "name": "CostsIntent",
-          "slots": [
-            {
-              "name": "product",
-              "type": "product"
-            }
-          ],
-          "samples": [
-            "What is the price of {product}",
-            "how expensive is {product}",
-            "how much is {product}",
-            "how much costs a {product}",
-            "how much costs {product}"
-          ]
-        },
-        {
-          "name": "category_of_decision",
-          "slots": [
-            {
-              "name": "category_of_product",
-              "type": "category_of_product"
-            }
-          ],
-          "samples": [
-            "I am {category_of_product}",
-            "I want {category_of_product}"
-          ]
-        },
-        {
-          "name": "ChoiceIntent",
-          "slots": [
-            {
-              "name": "subcategory",
-              "type": "subcategory"
-            }
-          ],
-          "samples": [
-            "I want {subcategory}"
-          ]
-        },
-        {
-          "name": "StopIntent",
-          "slots": [],
-          "samples": [
-            "I want my money back",
-            "No I don't want to buy that",
-            "No I don't want to buy this",
-            "I didn't want that"
-          ]
-        },
-        {
-          "name": "consent",
-          "slots": [
-            {
-              "name": "product",
-              "type": "product"
-            }
-          ],
-          "samples": [
-            "I want to pay for {product}"
-          ]
-        }
-      ],
-      "types": [
-        {
-          "name": "product",
-          "values": [
-            {
-              "name": {
-                "value": "Snickers"
-              }
+        "prompts": [{
+                "id": "Confirm.Intent.1537309296967",
+                "variations": [{
+                    "type": "PlainText",
+                    "value": "Do you really want to buy it?"
+                }]
             },
             {
-              "name": {
-                "value": "Cola",
-                "synonyms": [
-                  "Coca-Cola"
-                ]
-              }
+                "id": "Confirm.Intent.1213643633892",
+                "variations": [{
+                    "type": "PlainText",
+                    "value": "Are you sure you want to cancel a purchase?"
+                }]
             }
-          ]
-        },
-        {
-          "name": "category_of_product",
-          "values": [
-            {
-              "id": "1",
-              "name": {
-                "value": "drink",
-                "synonyms": [
-                  "to drink",
-                  "beverages",
-                  "beverage",
-                  "thirsty",
-                  "drinks",
-                  "something to drink"
-                ]
-              }
-            },
-            {
-              "id": "2",
-              "name": {
-                "value": "food",
-                "synonyms": [
-                  "eat",
-                  "to eat",
-                  "snack",
-                  "snacks",
-                  "hungry",
-                  "something to eat"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "subcategory",
-          "values": [
-            {
-              "name": {
-                "value": "salty snacks"
-              }
-            },
-            {
-              "name": {
-                "value": "chocolate"
-              }
-            },
-            {
-              "name": {
-                "value": "water"
-              }
-            },
-            {
-              "name": {
-                "value": "beer"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    "dialog": {
-      "intents": [
-        {
-          "name": "consent",
-          "confirmationRequired": true,
-          "prompts": {
-            "confirmation": "Confirm.Intent.1537309296967"
-          },
-          "slots": [
-            {
-              "name": "product",
-              "type": "product",
-              "confirmationRequired": false,
-              "elicitationRequired": false,
-              "prompts": {}
-            }
-          ]
-        },
-        {
-          "name": "ChoiceIntent",
-          "confirmationRequired": false,
-          "prompts": {},
-          "slots": [
-            {
-              "name": "subcategory",
-              "type": "subcategory",
-              "confirmationRequired": false,
-              "elicitationRequired": false,
-              "prompts": {}
-            }
-          ]
-        }
-      ],
-      "delegationStrategy": "ALWAYS"
-    },
-    "prompts": [
-      {
-        "id": "Confirm.Intent.1537309296967",
-        "variations": [
-          {
-            "type": "PlainText",
-            "value": "Do you really want to buy it?"
-          }
         ]
-      }
-    ]
-  }
+    }
 }

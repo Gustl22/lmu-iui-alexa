@@ -52,6 +52,21 @@ async function getProduct(search) {
     // return false;
 }
 
+
+async function getProductsWithCategoryAndEmotion(category, emotion) {
+    const sql = `SELECT p.name, p.product_ID, p.brand, p.price, p.quantity, p.energy, p.weight, p.state
+FROM product p
+JOIN product_category pc ON p.product_ID = pc.productID 
+JOIN category c ON pc.categoryID = c.categoryID
+WHERE c.name = '${category}' AND p.emotion = '${emotion}'`;  //TODO: SQL Abfrage für Emotion anpassen
+    return await query(sql);
+}
+
+
+
+
+
+
 async function getProductsWithCategory(category) {
     const sql = `SELECT p.name, p.product_ID, p.brand, p.price, p.quantity, p.energy, p.weight, p.state
 FROM product p
@@ -210,9 +225,13 @@ const CategoryOfDecisionIntentHandler = {
         /*if (aisystem === 1) var prodType = 'snacks';
          if (aisystem === 2) prodType = "drinks";*/
         const products = await getProductsWithCategory(slotName);
+        const emotion = await getEmotion();
+        const productsWithEmotions = await getProductsWithCategoryAndEmotion(slotName, emotion)
+
         // Extract product name, implode the array, and replace & with and, as alexa doesn't understand &.
         const productsStr = products.map(product => product.name).join(', ').replace('&', ' and ');
-        const speakOutput = `We offer the following ${slotName}: ` + productsStr + ". Which do you choose?";
+        const productsWithEmotionsStr = productsWithEmotions.map(product => product.name).join(', ').replace('&', ' and ');
+        const speakOutput = `Based on your emotions we suggest the following: ` + productsWithEmotionsStr + `. Additionally, we offer the following ${slotName}: ` + productsStr + ". Which do you choose?";
         return handlerInput.responseBuilder
 
             .speak(speakOutput)

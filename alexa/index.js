@@ -28,7 +28,7 @@ async function getPrice(search) {
         //return 'It costs ' + product.price + ' €. ' + "Do you want to buy it?";
         return 'It costs ' + product.price + ' €. ';
     } else {
-        return "Sorry, we don't sell this product. ";
+        return false;
     }
 }
 
@@ -199,18 +199,25 @@ const BuyIntentHandler = {
     },
     async handle(handlerInput) {
         // TODO allow every product in db
+        const intent = handlerInput.requestEnvelope.request.intent;
         let product = handlerInput.requestEnvelope.request.intent.slots.product.value;
-        const speakOutput = await getPrice(product);
-        return handlerInput.responseBuilder
-            .addDelegateDirective({
+        let speakOutput = await getPrice(product);
+        let responseBuilder = handlerInput.responseBuilder;
+        if(speakOutput) {
+            responseBuilder = responseBuilder.addDelegateDirective({
                 name: 'consent',
                 confirmationStatus: 'NONE',
                 slots: {}
-            })
-            .speak(speakOutput)
+            });
+        } else {
+            speakOutput = "Sorry, we don't sell this product.";
+        }
+
+        responseBuilder = responseBuilder.speak(speakOutput)
             .reprompt('add a reprompt if you want to keep the session open for the user to respond')
-            .withSimpleCard("test title", "test text")
-            .getResponse();
+            .withSimpleCard("test title", "test text");
+
+        return responseBuilder.getResponse();
     }
 };
 
@@ -249,7 +256,11 @@ const HowMuchIntentHandler = {
     },
     async handle(handlerInput) {
         let slotName = handlerInput.requestEnvelope.request.intent.slots.product.value;
-        speakOutput = await getPrice(slotName);
+        let speakOutput = await getPrice(slotName);
+
+        if(!speakOutput) {
+            speakOutput = "Sorry, we don't sell this product. ";
+        }
 
         return handlerInput.responseBuilder
             .speak(speakOutput)

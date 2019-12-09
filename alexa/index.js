@@ -211,10 +211,12 @@ const BuyIntentHandler = {
     async handle(handlerInput) {
         // TODO allow every product in db
         const intent = handlerInput.requestEnvelope.request.intent;
-        let product = handlerInput.requestEnvelope.request.intent.slots.product.value;
-        let speakOutput = await getPrice(product);
+        let productName = handlerInput.requestEnvelope.request.intent.slots.product.value;
+        let product = await getProduct(productName);
         let responseBuilder = handlerInput.responseBuilder;
-        if(speakOutput) {
+        let speakOutput;
+        if(product) {
+            speakOutput = 'It costs ' + product.price + ' €. ';
             responseBuilder = responseBuilder.addDelegateDirective({
                 name: 'consent',
                 confirmationStatus: 'NONE',
@@ -224,9 +226,28 @@ const BuyIntentHandler = {
             speakOutput = "Sorry, we don't sell this product.";
         }
 
-        responseBuilder = responseBuilder.speak(speakOutput)
-            .reprompt('add a reprompt if you want to keep the session open for the user to respond')
-            .withSimpleCard("test title", "test text");
+        if(product.largeImageUrl) {
+            // console.log(product.largeImageUrl);
+            responseBuilder = responseBuilder.withStandardCard(
+                product.name,
+                'Price: ' + product.price
+                + "\nBrand: " + product.brand,
+                null,
+                product.largeImageUrl
+            );
+            // cards are not updated:
+            // https://stackoverflow.com/questions/53269516/alexa-not-showing-card-despite-being-present-in-json
+
+            // responseBuilder = responseBuilder
+            //     .reprompt(speakOutput)
+            //     .withSimpleCard(
+            //     product.name,
+            //     'Price: ' + product.price
+            //     + "\nBrand: " + product.brand
+            // );
+        }
+
+        responseBuilder = responseBuilder.speak(speakOutput);
 
         return responseBuilder.getResponse();
     }

@@ -17,6 +17,15 @@ const pool = mariadb.createPool({
     database: config.database
 });
 
+
+const EMOTION_HAPPY = "happy";
+const EMOTION_NEUTRAL = 'neutral';
+const EMOTION_SAD = 'sad';
+const EMOTION_ANGRY = 'angry';
+const EMOTION_FEARFUL = 'fearful';
+const EMOTION_DISGUSTED = 'disgusted';
+const EMOTION_SURPRISED = 'surprised';
+
 var buyingProcess = false;
 
 
@@ -119,7 +128,9 @@ const LaunchRequestHandler = {
     async handle(handlerInput) {
         let speakOutput = 'Welcome to our vending machine!';
         const emotion = await getEmotion();
-        speakOutput += ' Looks like you are ' + emotion + '!';
+        if(emotion == EMOTION_HAPPY) {
+            speakOutput += ' Looks like you are very' + emotion + ' today!';
+        }
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)

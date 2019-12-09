@@ -8,10 +8,20 @@ Promise.all([
 ]).then(startVideo);
 
 function startVideo() {
+    navigator.getUserMedia = ( navigator.getUserMedia ||
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia ||
+        navigator.msGetUserMedia);
+
     navigator.getUserMedia(
         {video: {}},
         stream => video.srcObject = stream,
-        err => console.error(err)
+        err => {
+            if(err.name == 'NotReadableError'){
+                alert('Webcam already in use!')
+            }
+            console.error(err);
+        }
     )
 }
 
@@ -22,7 +32,13 @@ video.addEventListener('play', () => {
     faceapi.matchDimensions(canvas, displaySize);
 
     setInterval(async () => {
-        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+            // FIXME:
+            // https://github.com/justadudewhohacks/face-api.js/issues/282
+            // https://github.com/justadudewhohacks/face-api.js/issues/125
+            // inputSize: 256, // this line solves 'Box.constructor - expected box to be IBoundingBox | IRect, instead ...'
+            // scoreThreshold: 0.5,
+        }))
             .withFaceLandmarks()
             .withFaceExpressions();
         // console.log(detections);

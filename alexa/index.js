@@ -138,7 +138,6 @@ const LaunchRequestHandler = {
             .reprompt(speakOutput)
             .withSimpleCard("Welcome to our vending machine!", "You can say \"I am hungry\" or choose a specific product. For advice you can say \"I want to buy something\".")
             .getResponse();
-
     }
 };
 
@@ -166,7 +165,7 @@ async function getEmotion() {
     return 'neutral';
 }
 
-async function setMode(mode = {'profile': true}) {
+async function setMode(mode = { 'profile': true }) {
     try {
         const face = await postData('http://localhost:3002/api/mode/save', mode);
     } catch (e) {

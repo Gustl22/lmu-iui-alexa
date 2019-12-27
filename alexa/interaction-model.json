@@ -24,6 +24,19 @@
           "samples": []
         },
         {
+            "name": "record_face",
+            "slots": [],
+            "samples": [
+                "I want to sign up",
+                "I want to create a profile",
+                "I want to make a profile",
+                "I want to create an account",
+                "I want you to remember me",
+                "Remember my face",
+                "Remember me"
+            ]
+        },
+        {
           "name": "AdviceIntent",
           "slots": [],
           "samples": [

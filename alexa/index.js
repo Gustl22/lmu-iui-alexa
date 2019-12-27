@@ -166,6 +166,15 @@ async function getEmotion() {
     return 'neutral';
 }
 
+async function setMode(mode = {'profile': true}) {
+    try {
+        const face = await postData('http://localhost:3002/api/mode/save', mode);
+    } catch (e) {
+        throw "Maybe you haven't turned on the face detection server." + e.message;
+    }
+    return false;
+}
+
 async function postData(url = '', data = {}) {
     // Default options are marked with *
     const response = await fetch(url, {

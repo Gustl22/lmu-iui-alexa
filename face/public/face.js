@@ -8,7 +8,7 @@ Promise.all([
 ]).then(startVideo);
 
 function startVideo() {
-    navigator.getUserMedia = ( navigator.getUserMedia ||
+    navigator.getUserMedia = (navigator.getUserMedia ||
         navigator.webkitGetUserMedia ||
         navigator.mozGetUserMedia ||
         navigator.msGetUserMedia);
@@ -17,7 +17,7 @@ function startVideo() {
         {video: {}},
         stream => video.srcObject = stream,
         err => {
-            if(err.name == 'NotReadableError'){
+            if (err.name == 'NotReadableError') {
                 alert('Webcam already in use!')
             }
             console.error(err);
@@ -31,25 +31,55 @@ video.addEventListener('play', () => {
     const displaySize = {width: video.width, height: video.height};
     faceapi.matchDimensions(canvas, displaySize);
 
+    const profiles = [];
+
     setInterval(async () => {
-        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+        const modes = await postData('/api/mode/load');
+
+        const detector = new faceapi.TinyFaceDetectorOptions({
             // FIXME:
             // https://github.com/justadudewhohacks/face-api.js/issues/282
             // https://github.com/justadudewhohacks/face-api.js/issues/125
             // inputSize: 256, // this line solves 'Box.constructor - expected box to be IBoundingBox | IRect, instead ...'
             // scoreThreshold: 0.5,
-        }))
-            .withFaceLandmarks()
-            .withFaceExpressions();
-        // console.log(detections);
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
-        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-        faceapi.draw.drawDetections(canvas, resizedDetections);
-        faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-        faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+        });
 
-        if (detections.length > 0) {
-            await postData('/api/face/save', {'expressions': detections[0].expressions});
+        if (modes.hasOwnProperty('profile') && modes.profile) {
+            const detection = await faceapi.detectSingleFace(video, detector)
+                .withFaceDescriptors();
+            (profiles[modes.profile] = profiles[modes.profile] || []).push(detection.descriptor);
+        } else {
+
+            const labeledDescriptors = [];
+            for (let key in profiles) {
+                if (profiles.hasOwnProperty(key)) {
+                    labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(
+                        key,
+                        profiles[key]
+                    ));
+                }
+            }
+
+            const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors);
+            detections.forEach(fd => {
+                const bestMatch = faceMatcher.findBestMatch(fd.descriptor);
+                console.log(bestMatch.toString());
+            });
+
+            const detections = await faceapi.detectAllFaces(video, detector)
+                .withFaceLandmarks()
+                .withFaceExpressions();
+            // console.log(detections);
+
+            const resizedDetections = faceapi.resizeResults(detections, displaySize);
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            faceapi.draw.drawDetections(canvas, resizedDetections);
+            faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+            faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+
+            if (detections.length > 0) {
+                await postData('/api/face/save', {'expressions': detections[0].expressions});
+            }
         }
     }, 500)
 });

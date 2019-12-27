@@ -25,7 +25,18 @@
         },
         {
             "name": "record_face",
-            "slots": [],
+            "slots": [
+                {
+                    "name": "name",
+                    "type": "AMAZON.FirstName",
+                    "samples": [
+                        "I'm {name}",
+                        "I am {name}",
+                        "{name}",
+                        "My name is {name}"
+                    ]
+                }
+            ],
             "samples": [
                 "I want to sign up",
                 "I want to create a profile",
@@ -329,6 +340,24 @@
           ]
         },
         {
+            "name": "record_face",
+            "confirmationRequired": true,
+            "prompts": {
+                "confirmation": "Confirm.Intent.1005869010209"
+            },
+            "slots": [
+                {
+                    "name": "name",
+                    "type": "AMAZON.FirstName",
+                    "confirmationRequired": false,
+                    "elicitationRequired": true,
+                    "prompts": {
+                        "elicitation": "Elicit.Slot.1005869010209.1403602672043"
+                    }
+                }
+            ]
+        },
+        {
           "name": "StopIntent",
           "confirmationRequired": true,
           "prompts": {
@@ -347,6 +376,24 @@
             "value": "Do you really want to buy it?"
           }]
       },
+      {
+        "id": "Confirm.Intent.1005869010209",
+        "variations": [
+            {
+                "type": "PlainText",
+                "value": "Do you want to save it?"
+            }
+        ]
+    },
+    {
+        "id": "Elicit.Slot.1005869010209.1403602672043",
+        "variations": [
+            {
+                "type": "PlainText",
+                "value": "What is your name?"
+            }
+        ]
+    },
       {
         "id": "Confirm.Intent.1213643633892",
         "variations": [{

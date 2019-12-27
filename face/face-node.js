@@ -38,6 +38,19 @@ app.post('/api/face/load', async function(req, res) {
     await res.json(data);
 });
 
+app.post('/api/mode/save', async function(req, res) {
+    if(req.body.hasOwnProperty('profile')) {
+        await saveState('mode', {'profile': req.body.profile});
+        setTimeout(function(){saveState('mode', {'profile': false})},3000);
+    }
+    res.sendStatus(200);
+});
+
+app.post('/api/mode/load', async function(req, res) {
+    const data = await loadState('mode');
+    await res.json(data);
+});
+
 /**
  * Cache data for later use.
  *

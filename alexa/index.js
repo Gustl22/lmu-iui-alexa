@@ -26,10 +26,8 @@ const EMOTION_FEARFUL = 'fearful';
 const EMOTION_DISGUSTED = 'disgusted';
 const EMOTION_SURPRISED = 'surprised';
 
-var buyingProcess = false;
-
 async function getUser(user_id) {
-    const sql = `SELECT * FROM user WHERE id=${user_id}`;
+    const sql = `SELECT * FROM user WHERE user_ID=${user_id}`;
     return (await query(sql))[0];
 }
 

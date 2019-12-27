@@ -28,6 +28,10 @@ const EMOTION_SURPRISED = 'surprised';
 
 var buyingProcess = false;
 
+async function getUser(user_id) {
+    const sql = `SELECT * FROM user WHERE id=${user_id}`;
+    return (await query(sql))[0];
+}
 
 async function getPrice(search) {
     let product = await getProduct(search);
@@ -61,20 +65,14 @@ async function getProduct(search) {
     // return false;
 }
 
-
 async function getProductsWithCategoryAndEmotion(category, emotion) {
     const sql = `SELECT p.name, p.product_ID, p.brand, p.price, p.quantity, p.energy, p.weight, p.emotion, p.smallImageUrl, p.largeImageUrl, p.state
 FROM product p
 JOIN product_category pc ON p.product_ID = pc.productID 
 JOIN category c ON pc.categoryID = c.categoryID
-WHERE c.name = '${category}' AND p.emotion = '${emotion}'`;  //TODO: SQL Abfrage für Emotion anpassen
+WHERE c.name = '${category}' AND p.emotion = '${emotion}'`; //TODO: SQL Abfrage für Emotion anpassen
     return await query(sql);
 }
-
-
-
-
-
 
 async function getProductsWithCategory(category) {
     const sql = `SELECT p.name, p.product_ID, p.brand, p.price, p.quantity, p.energy, p.weight, p.emotion, p.smallImageUrl, p.largeImageUrl, p.state
@@ -128,7 +126,7 @@ const LaunchRequestHandler = {
     async handle(handlerInput) {
         let speakOutput = 'Welcome to our vending machine!';
         const emotion = await getEmotion();
-        if(emotion == EMOTION_HAPPY) {
+        if (emotion == EMOTION_HAPPY) {
             speakOutput += ' Looks like you are very ' + emotion + ' today!';
         } else if (emotion == EMOTION_ANGRY) {
             speakOutput += ' I think your\'re angry! Tell me about your secrets!';
@@ -221,7 +219,7 @@ const BuyIntentHandler = {
         let product = await getProduct(productName);
         let responseBuilder = handlerInput.responseBuilder;
         let speakOutput;
-        if(product) {
+        if (product) {
             speakOutput = 'It costs ' + product.price + ' €. ';
             responseBuilder = responseBuilder.addDelegateDirective({
                 name: 'consent',
@@ -232,12 +230,12 @@ const BuyIntentHandler = {
             speakOutput = "Sorry, we don't sell this product.";
         }
 
-        if(product.largeImageUrl) {
+        if (product.largeImageUrl) {
             // console.log(product.largeImageUrl);
             responseBuilder = responseBuilder.withStandardCard(
                 product.name,
-                'Price: ' + product.price
-                + "\nBrand: " + product.brand,
+                'Price: ' + product.price +
+                "\nBrand: " + product.brand,
                 null,
                 product.largeImageUrl
             );
@@ -277,7 +275,7 @@ const CategoryOfDecisionIntentHandler = {
         const productsStr = products.map(product => product.name).join(', ').replace('&', ' and ');
         const productsWithEmotionsStr = productsWithEmotions.map(product => product.name).join(', ').replace('&', ' and ');
         let speakOutput = '';
-        if(emotion != EMOTION_NEUTRAL) {
+        if (emotion != EMOTION_NEUTRAL) {
             speakOutput += 'You look ' + emotion + '. ';
             speakOutput += `I think you need this: ` + productsWithEmotionsStr;
             speakOutput += `. Additionally, we offer the following ${slotName}: ` + productsStr + ". Which do you choose?";
@@ -303,7 +301,7 @@ const HowMuchIntentHandler = {
         let slotName = handlerInput.requestEnvelope.request.intent.slots.product.value;
         let speakOutput = await getPrice(slotName);
 
-        if(!speakOutput) {
+        if (!speakOutput) {
             speakOutput = "Sorry, we don't sell this product. ";
         }
 

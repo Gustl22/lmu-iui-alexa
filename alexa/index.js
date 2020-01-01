@@ -31,6 +31,12 @@ async function getUser(user_id) {
     return (await query(sql))[0];
 }
 
+async function createNewUser(name) { //you can push here any aruments that you need, such as name, surname, age...
+    const sql = `INSERT INTO user (name) VALUES (${name})`;
+    return (await query(sql));
+
+}
+
 async function getPrice(search) {
     let product = await getProduct(search);
     console.log(search);

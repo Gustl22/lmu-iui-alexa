@@ -26,8 +26,16 @@ const EMOTION_FEARFUL = 'fearful';
 const EMOTION_DISGUSTED = 'disgusted';
 const EMOTION_SURPRISED = 'surprised';
 
-var buyingProcess = false;
+async function getUser(user_id) {
+    const sql = `SELECT * FROM user WHERE user_ID=${user_id}`;
+    return (await query(sql))[0];
+}
 
+async function createNewUser(name) { //you can push here any aruments that you need, such as name, surname, age...
+    const sql = `INSERT INTO user (name) VALUES (${name})`;
+    return (await query(sql));
+
+}
 
 async function getPrice(search) {
     let product = await getProduct(search);
@@ -61,13 +69,12 @@ async function getProduct(search) {
     // return false;
 }
 
-
 async function getProductsWithCategoryAndEmotion(category, emotion) {
     const sql = `SELECT p.name, p.product_ID, p.brand, p.price, p.quantity, p.energy, p.weight, p.emotion, p.smallImageUrl, p.largeImageUrl, p.state
 FROM product p
 JOIN product_category pc ON p.product_ID = pc.productID 
 JOIN category c ON pc.categoryID = c.categoryID
-WHERE c.name = '${category}' AND p.emotion = '${emotion}'`;  //TODO: SQL Abfrage für Emotion anpassen
+WHERE c.name = '${category}' AND p.emotion = '${emotion}'`; //TODO: SQL Abfrage für Emotion anpassen
     return await query(sql);
 }
 
@@ -137,7 +144,6 @@ const LaunchRequestHandler = {
             .reprompt(speakOutput)
             .withSimpleCard("Welcome to our vending machine!", "You can say \"I am hungry\" or choose a specific product. For advice you can say \"I want to buy something\".")
             .getResponse();
-
     }
 };
 
@@ -244,8 +250,8 @@ const BuyIntentHandler = {
             // console.log(product.largeImageUrl);
             responseBuilder = responseBuilder.withStandardCard(
                 product.name,
-                'Price: ' + product.price
-                + "\nBrand: " + product.brand,
+                'Price: ' + product.price +
+                "\nBrand: " + product.brand,
                 null,
                 product.largeImageUrl
             );
@@ -302,7 +308,7 @@ const CategoryOfDecisionIntentHandler = {
     }
 };
 
-const HowMuchIntentHandler = {
+const RecordFaceHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
             Alexa.getIntentName(handlerInput.requestEnvelope) === 'record_face';
@@ -328,7 +334,7 @@ const HowMuchIntentHandler = {
     }
 };
 
-const RecordFaceHandler = {
+const HowMuchIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
             Alexa.getIntentName(handlerInput.requestEnvelope) === 'CostsIntent';

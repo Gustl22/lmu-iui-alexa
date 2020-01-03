@@ -71,11 +71,6 @@ WHERE c.name = '${category}' AND p.emotion = '${emotion}'`;  //TODO: SQL Abfrage
     return await query(sql);
 }
 
-
-
-
-
-
 async function getProductsWithCategory(category) {
     const sql = `SELECT p.name, p.product_ID, p.brand, p.price, p.quantity, p.energy, p.weight, p.emotion, p.smallImageUrl, p.largeImageUrl, p.state
 FROM product p
@@ -128,7 +123,7 @@ const LaunchRequestHandler = {
     async handle(handlerInput) {
         let speakOutput = 'Welcome to our vending machine!';
         const emotion = await getEmotion();
-        if(emotion == EMOTION_HAPPY) {
+        if (emotion == EMOTION_HAPPY) {
             speakOutput += ' Looks like you are very ' + emotion + ' today!';
         } else if (emotion == EMOTION_ANGRY) {
             speakOutput += ' I think your\'re angry! Tell me about your secrets!';
@@ -148,35 +143,35 @@ const LaunchRequestHandler = {
 
 async function getEmotion() {
     try {
-        const face = await postData('http://localhost:3002/api/face/load');
-        if (face.hasOwnProperty('expressions')) {
-            let max = 0;
-            let expressionMax = 'undefined';
+        const expressions = await postData('http://localhost:3002/api/vending/load', {
+            'vendingId': 0,
+            'prop': 'expressions'
+        });
+        let max = 0;
+        let expressionMax = 'undefined';
 
-            for (let expression in face.expressions) {
-                let val = face.expressions[expression];
-                if (val > max) {
-                    max = val;
-                    expressionMax = expression;
-                }
+        for (let expression in expressions) {
+            let val = expressions[expression];
+            if (val > max) {
+                max = val;
+                expressionMax = expression;
             }
-
-            return expressionMax;
         }
+
+        return expressionMax;
     } catch (e) {
-        throw "Maybe you haven't turned on the face detection server." + e.message;
+        throw "Maybe you haven't turned on the face detection server." + e;
     }
 
     return 'neutral';
 }
 
-async function setMode(mode = {'profile': true}) {
+async function setMode(mode = {'trainProfile': true}) {
     try {
-        const face = await postData('http://localhost:3002/api/mode/save', mode);
+        return Boolean(await postData('http://localhost:3002/api/vending/save', mode));
     } catch (e) {
-        throw "Maybe you haven't turned on the face detection server." + e.message;
+        throw "Maybe you haven't turned on the face detection server. " + e;
     }
-    return false;
 }
 
 async function postData(url = '', data = {}) {
@@ -188,16 +183,20 @@ async function postData(url = '', data = {}) {
         credentials: 'same-origin', // include, *same-origin, omit
         headers: {
             'Content-Type': 'application/json'
-                // 'Content-Type': 'application/x-www-form-urlencoded',
+            // 'Content-Type': 'application/x-www-form-urlencoded',
         },
         redirect: 'follow', // manual, *follow, error
         referrer: 'no-referrer', // no-referrer, *client
         body: JSON.stringify(data) // body data type must match "Content-Type" header
     });
     const contentType = response.headers.get("content-type");
+    if (response.status >= 400)
+        throw response.status + ' (' + response.statusText + ')';
     if (contentType && contentType.indexOf("application/json") !== -1) {
         return await response.json() // parses JSON response into native JavaScript objects
     }
+    if(response.status === 204)
+        return false;
     return response;
 }
 
@@ -230,7 +229,7 @@ const BuyIntentHandler = {
         let product = await getProduct(productName);
         let responseBuilder = handlerInput.responseBuilder;
         let speakOutput;
-        if(product) {
+        if (product) {
             speakOutput = 'It costs ' + product.price + ' €. ';
             responseBuilder = responseBuilder.addDelegateDirective({
                 name: 'consent',
@@ -241,7 +240,7 @@ const BuyIntentHandler = {
             speakOutput = "Sorry, we don't sell this product.";
         }
 
-        if(product.largeImageUrl) {
+        if (product.largeImageUrl) {
             // console.log(product.largeImageUrl);
             responseBuilder = responseBuilder.withStandardCard(
                 product.name,
@@ -286,7 +285,7 @@ const CategoryOfDecisionIntentHandler = {
         const productsStr = products.map(product => product.name).join(', ').replace('&', ' and ');
         const productsWithEmotionsStr = productsWithEmotions.map(product => product.name).join(', ').replace('&', ' and ');
         let speakOutput = '';
-        if(emotion != EMOTION_NEUTRAL) {
+        if (emotion != EMOTION_NEUTRAL) {
             speakOutput += 'You look ' + emotion + '. ';
             speakOutput += `I think you need this: ` + productsWithEmotionsStr;
             speakOutput += `. Additionally, we offer the following ${slotName}: ` + productsStr + ". Which do you choose?";
@@ -306,13 +305,39 @@ const CategoryOfDecisionIntentHandler = {
 const HowMuchIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'record_face';
+    },
+    async handle(handlerInput) {
+        let slotName = handlerInput.requestEnvelope.request.intent.slots.name.value;
+        let success = false;
+        let errorMessage;
+        if (slotName) {
+            try {
+                success = await setMode({'trainProfile': slotName});
+            } catch (e) {
+                errorMessage = e;
+            }
+        }
+        console.log(slotName);
+        let speakOutput = success ? "I saved your profile, " + slotName + '.' :
+            "I'm sorry, your profile couldn't be saved. " + errorMessage + ". Try again!";
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .getResponse();
+    }
+};
+
+const RecordFaceHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
             Alexa.getIntentName(handlerInput.requestEnvelope) === 'CostsIntent';
     },
     async handle(handlerInput) {
         let slotName = handlerInput.requestEnvelope.request.intent.slots.product.value;
         let speakOutput = await getPrice(slotName);
 
-        if(!speakOutput) {
+        if (!speakOutput) {
             speakOutput = "Sorry, we don't sell this product. ";
         }
 
@@ -338,8 +363,6 @@ const ConsentIntentHandler = {
             speakOutput = "It's a pity! Then choose something else";
         if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED')
             speakOutput = 'You bought it. Bon appetit!';
-
-
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -381,6 +404,7 @@ const HelpIntentHandler = {
             .getResponse();
     }
 };
+
 const CancelAndStopIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
@@ -394,6 +418,7 @@ const CancelAndStopIntentHandler = {
             .getResponse();
     }
 };
+
 const SessionEndedRequestHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'SessionEndedRequest';
@@ -454,6 +479,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         ConsentIntentHandler,
         StopIntentHandler,
         HelpIntentHandler,
+        RecordFaceHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
         IntentReflectorHandler, // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers

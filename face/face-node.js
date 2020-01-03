@@ -23,40 +23,113 @@ app.get('/', function(req, res){
 /**
  *
  */
-app.post('/api/face/save', async function(req, res) {
-    const expressions = req.body.expressions;
-
-    await saveState('face', {'expressions' : expressions});
-
-    res.sendStatus(200);
-});
-
-app.post('/api/face/load', async function(req, res) {
-    // const expressions = req.body.expressions;
-
-    const data = await loadState('face');
-    await res.json(data);
-});
-
-app.post('/api/mode/save', async function(req, res) {
-    if(req.body.hasOwnProperty('profile')) {
-        await saveState('mode', {'profile': req.body.profile});
-        setTimeout(function(){saveState('mode', {'profile': false})},3000);
+app.post('/api/vending/save', async function(req, res) {
+    if(req.body.hasOwnProperty('expressions')) {
+        await saveVendingState(getVendingId(req), 'expressions', req.body.expressions);
+    } else if(req.body.hasOwnProperty('trainProfile')) {
+        await saveVendingState(getVendingId(req), 'trainProfile', req.body.trainProfile);
+        // Wait for saved profile from client
+        if (req.body.trainProfile) {
+            // Wait until profile training is completed and send ok status.
+            try {
+                await checkFlag(async function () {
+                    const trainProfile = await loadVendingState(getVendingId(req), 'trainProfile');
+                    return !Boolean(trainProfile);
+                }, function () {
+                    res.sendStatus(200);
+                }, 200, 10000, function () {
+                    console.log("Timeout of face detection!");
+                    res.sendStatus(599);
+                });
+            } catch (e) {
+                res.sendStatus(500);
+            }
+            //await sleep(3000);
+            return;
+        }
     }
     res.sendStatus(200);
 });
 
-app.post('/api/mode/load', async function(req, res) {
-    const data = await loadState('mode');
-    await res.json(data);
+app.post('/api/vending/load', async function(req, res) {
+    // const expressions = req.body.expressions;
+    if(req.body.hasOwnProperty('prop')) {
+        const data = await loadVendingState(getVendingId(req), req.body.prop);
+        if(data) {
+            await res.json(data);
+        } else
+            await res.sendStatus(204); // send no content
+    }
 });
+
+app.post('/api/profiles/save', async function(req, res) {
+    const newProfiles = req.body;
+    const profiles = await loadState('profiles') || {};
+    for (let name in newProfiles) {
+        if (newProfiles.hasOwnProperty(name)) {
+            const profile = (profiles[name] || {});
+            const newProfile = newProfiles[name];
+            for (let prop in newProfile) {
+                if (newProfile.hasOwnProperty(prop)) {
+                    profile[prop] = newProfile[prop];
+                }
+            }
+            profiles[name] = profile;
+            //delete newProfiles[name];
+        }
+    }
+    await saveState('profiles', profiles);
+    await res.sendStatus(200);
+});
+
+app.post('/api/profiles/load', async function(req, res) {
+    const profiles = await loadState('profiles') || {};
+    if(req.body.hasOwnProperty('name')) {
+        const name = req.body.name;
+        const profile = (profiles[name] || {});
+        await res.json(profile);
+    } else {
+        await res.json(profiles);
+    }
+});
+
+async function checkFlag(flag, callback, time, max, onFail) {
+    if(max < 1) {
+        onFail();
+    } else if((await flag()) === false) {
+        setTimeout(function() {
+            checkFlag(flag, callback, time, max - time, onFail);
+        }, time);
+    } else {
+        callback();
+    }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getVendingId(req){
+    if(req.body.hasOwnProperty('vendingId')) {
+        return req.body.vendingId;
+    }
+    return 0;
+}
 
 /**
  * Cache data for later use.
  *
- * @type {Array}
+ * @type {Object}
  */
-const cache = [];
+const cache = {};
+
+async function saveVendingState(vendingId, name, object){
+    await saveState(vendingId + "-" + name, object);
+}
+
+async function loadVendingState(vendingId, name){
+    return await loadState(vendingId + "-" + name);
+}
 
 async function saveState(name, object) {
     cache[name] = object;

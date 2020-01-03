@@ -25,16 +25,24 @@ function startVideo() {
     )
 }
 
-video.addEventListener('play', () => {
+video.addEventListener('play', async () => {
     const canvas = faceapi.createCanvasFromMedia(video);
     document.body.append(canvas);
     const displaySize = {width: video.width, height: video.height};
     faceapi.matchDimensions(canvas, displaySize);
 
-    const profiles = [];
+    const profiles = {};
+    const labeledDescriptors = [];
+
+    // Load saved profiles
+    const savedProfiles = await postData('/api/profiles/load');
+    console.log('Saved profiles: ' + Object.keys(savedProfiles));
+    await convertProfilesToLabeledDescriptors(savedProfiles, labeledDescriptors);
 
     setInterval(async () => {
-        const modes = await postData('/api/mode/load');
+        const trainProfil = await postData('/api/vending/load', {
+            'prop': 'trainProfile'
+        });
 
         const detector = new faceapi.TinyFaceDetectorOptions({
             // FIXME:
@@ -44,46 +52,96 @@ video.addEventListener('play', () => {
             // scoreThreshold: 0.5,
         });
 
-        if (modes.hasOwnProperty('profile') && modes.profile) {
+        if (trainProfil) {
             const detection = await faceapi.detectSingleFace(video, detector)
-                .withFaceDescriptors();
-            (profiles[modes.profile] = profiles[modes.profile] || []).push(detection.descriptor);
-        } else {
-
-            const labeledDescriptors = [];
-            for (let key in profiles) {
-                if (profiles.hasOwnProperty(key)) {
-                    labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(
-                        key,
-                        profiles[key]
-                    ));
+                .withFaceLandmarks()
+                .withFaceExpressions()
+                .withFaceDescriptor();
+            if (detection) {
+                if (!profiles[trainProfil])
+                    profiles[trainProfil] = {descriptors: []};
+                profiles[trainProfil].descriptors.push(detection.descriptor);
+                if (profiles[trainProfil].descriptors.length > 2) {
+                    await setMode({'trainProfile': false});
                 }
             }
-
-            const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors);
-            detections.forEach(fd => {
-                const bestMatch = faceMatcher.findBestMatch(fd.descriptor);
-                console.log(bestMatch.toString());
-            });
-
+        } else {
             const detections = await faceapi.detectAllFaces(video, detector)
                 .withFaceLandmarks()
-                .withFaceExpressions();
+                .withFaceExpressions()
+                .withFaceDescriptors();
+                // .withAgeAndGender()
             // console.log(detections);
 
-            const resizedDetections = faceapi.resizeResults(detections, displaySize);
-            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-            faceapi.draw.drawDetections(canvas, resizedDetections);
-            faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-            faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
-
             if (detections.length > 0) {
-                await postData('/api/face/save', {'expressions': detections[0].expressions});
+
+                if (Object.keys(profiles).length > 0) {
+                    await convertProfilesToLabeledDescriptors(profiles, labeledDescriptors);
+                    await saveProfiles(profiles);
+                }
+
+                if (labeledDescriptors.length > 0) {
+                    const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors);
+                    detections.forEach(fd => {
+                        const maxDescriptorDistance = 0.6;
+                        const bestMatch = faceMatcher.findBestMatch(fd.descriptor, maxDescriptorDistance);
+                        //console.log(bestMatch.toString());
+                        fd.bestMatch = bestMatch;
+                    });
+                }
+
+                const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                resizedDetections.forEach(detection => {
+                    const box = detection.detection.box;
+                    const drawBox = new faceapi.draw.DrawBox(box, {label: detection.bestMatch});
+                    drawBox.draw(canvas);
+                });
+                //faceapi.draw.drawDetections(canvas, resizedDetections);
+                faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+                faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+                // faceapi.draw.draw()
+
+                await postData('/api/vending/save', {'expressions': detections[0].expressions});
             }
         }
     }, 500)
 });
 
+async function setMode(mode = {'trainProfile': true}) {
+    try {
+        return Boolean(await postData('/api/vending/save', mode));
+    } catch (e) {
+        throw "Maybe you haven't turned on the face detection server. " + e;
+    }
+}
+
+async function convertProfilesToLabeledDescriptors(profiles, labeledDescriptors) {
+    for (let key in profiles) {
+        if (profiles.hasOwnProperty(key)) {
+            const descriptors = profiles[key].descriptors.map(function (value) {
+                if(value instanceof Float32Array)
+                    return value;
+                return new Float32Array(value);
+            });
+            labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(
+                key,
+                descriptors
+            ));
+        }
+    }
+}
+
+async function saveProfiles(profiles) {
+    await postData('/api/profiles/save', profiles);
+    for (let key in profiles) {
+        if (profiles.hasOwnProperty(key)) {
+            delete profiles[key];
+        }
+    }
+    // console.log('Log after:');
+    // console.log(Object.keys(profiles));
+}
 
 async function postData(url = '', data = {}) {
     // Default options are marked with *
@@ -100,9 +158,13 @@ async function postData(url = '', data = {}) {
         referrer: 'no-referrer', // no-referrer, *client
         body: JSON.stringify(data) // body data type must match "Content-Type" header
     });
+    if (response.status >= 400)
+        throw response.status + ' (' + response.statusText + ')';
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
-        return await response.json() // parses JSON response into native JavaScript objects
+        return await response.json(); // parses JSON response into native JavaScript objects
     }
+    if (response.status === 204)
+        return false;
     return response;
 }

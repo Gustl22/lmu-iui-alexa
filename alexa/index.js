@@ -122,6 +122,14 @@ async function query(sql) {
     return false;
 }
 
+function getNameFromFace() {  //TODO: recognize the Face and return the matching name
+    name = "placeholderName"
+    return name
+}
+
+function getPersonalProductRecommendation(name) {
+    return "placeholderProduct"
+}
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -333,6 +341,24 @@ const RecordFaceHandler = {
     }
 };
 
+const AskToRememberFaceHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'ask_to_remember_face';
+    },
+    handle(handlerInput) {
+        const name_of_face =  getNameFromFace();
+        const recommended_product = getPersonalProductRecommendation(name_of_face);
+        const speakOutput = `Hello ${name_of_face}. Do you want to buy ${recommended_product}` ;
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+
+};
+
 const HowMuchIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
@@ -485,6 +511,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         StopIntentHandler,
         HelpIntentHandler,
         RecordFaceHandler,
+        AskToRememberFaceHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
         IntentReflectorHandler, // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers

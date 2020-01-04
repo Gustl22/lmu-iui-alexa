@@ -2,7 +2,8 @@
     "interactionModel": {
         "languageModel": {
             "invocationName": "vending machine",
-            "intents": [{
+            "intents": [
+                {
                     "name": "AMAZON.FallbackIntent",
                     "samples": []
                 },
@@ -24,7 +25,8 @@
                 },
                 {
                     "name": "record_face",
-                    "slots": [{
+                    "slots": [
+                        {
                             "name": "name",
                             "type": "AMAZON.FirstName",
                             "samples": [
@@ -67,7 +69,8 @@
                 },
                 {
                     "name": "BuyIntent",
-                    "slots": [{
+                    "slots": [
+                        {
                             "name": "product",
                             "type": "product"
                         },
@@ -91,10 +94,12 @@
                 },
                 {
                     "name": "CostsIntent",
-                    "slots": [{
-                        "name": "product",
-                        "type": "product"
-                    }],
+                    "slots": [
+                        {
+                            "name": "product",
+                            "type": "product"
+                        }
+                    ],
                     "samples": [
                         "What is the price of {product}",
                         "how expensive is {product}",
@@ -105,10 +110,12 @@
                 },
                 {
                     "name": "category_of_decision",
-                    "slots": [{
-                        "name": "category_of_product",
-                        "type": "category_of_product"
-                    }],
+                    "slots": [
+                        {
+                            "name": "category_of_product",
+                            "type": "category_of_product"
+                        }
+                    ],
                     "samples": [
                         "I am {category_of_product}",
                         "I want {category_of_product}"
@@ -116,10 +123,12 @@
                 },
                 {
                     "name": "ChoiceIntent",
-                    "slots": [{
-                        "name": "subcategory",
-                        "type": "subcategory"
-                    }],
+                    "slots": [
+                        {
+                            "name": "subcategory",
+                            "type": "subcategory"
+                        }
+                    ],
                     "samples": [
                         "I want {subcategory}"
                     ]
@@ -136,18 +145,76 @@
                 },
                 {
                     "name": "consent",
-                    "slots": [{
-                        "name": "product",
-                        "type": "product"
-                    }],
+                    "slots": [
+                        {
+                            "name": "product",
+                            "type": "product"
+                        }
+                    ],
                     "samples": [
                         "I want to pay for {product}"
                     ]
+                },
+                {
+                    "name": "AMAZON.MoreIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateSettingsIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NextIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.PageUpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.PageDownIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.PreviousIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ScrollRightIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ScrollDownIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ScrollLeftIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ScrollUpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "ask_to_remember_face",
+                    "slots": [],
+                    "samples": [
+                        "recognize me",
+                        "do you remember who I am",
+                        "do you know who I am",
+                        "do you recognize me",
+                        "do you know me",
+                        "do you remember me",
+                        "hi i'm back",
+                        "I'm back"
+                    ]
                 }
             ],
-            "types": [{
+            "types": [
+                {
                     "name": "product",
-                    "values": [{
+                    "values": [
+                        {
                             "name": {
                                 "value": "berliner kindl"
                             }
@@ -244,7 +311,8 @@
                 },
                 {
                     "name": "category_of_product",
-                    "values": [{
+                    "values": [
+                        {
                             "id": "1",
                             "name": {
                                 "value": "drink",
@@ -276,7 +344,8 @@
                 },
                 {
                     "name": "subcategory",
-                    "values": [{
+                    "values": [
+                        {
                             "name": {
                                 "value": "salty snacks"
                             }
@@ -301,31 +370,36 @@
             ]
         },
         "dialog": {
-            "intents": [{
+            "intents": [
+                {
                     "name": "consent",
                     "confirmationRequired": true,
                     "prompts": {
                         "confirmation": "Confirm.Intent.1537309296967"
                     },
-                    "slots": [{
-                        "name": "product",
-                        "type": "product",
-                        "confirmationRequired": false,
-                        "elicitationRequired": false,
-                        "prompts": {}
-                    }]
+                    "slots": [
+                        {
+                            "name": "product",
+                            "type": "product",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        }
+                    ]
                 },
                 {
                     "name": "ChoiceIntent",
                     "confirmationRequired": false,
                     "prompts": {},
-                    "slots": [{
-                        "name": "subcategory",
-                        "type": "subcategory",
-                        "confirmationRequired": false,
-                        "elicitationRequired": false,
-                        "prompts": {}
-                    }]
+                    "slots": [
+                        {
+                            "name": "subcategory",
+                            "type": "subcategory",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        }
+                    ]
                 },
                 {
                     "name": "record_face",
@@ -333,15 +407,17 @@
                     "prompts": {
                         "confirmation": "Confirm.Intent.1005869010209"
                     },
-                    "slots": [{
-                        "name": "name",
-                        "type": "AMAZON.FirstName",
-                        "confirmationRequired": false,
-                        "elicitationRequired": true,
-                        "prompts": {
-                            "elicitation": "Elicit.Slot.1005869010209.1403602672043"
+                    "slots": [
+                        {
+                            "name": "name",
+                            "type": "AMAZON.FirstName",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1005869010209.1403602672043"
+                            }
                         }
-                    }]
+                    ]
                 },
                 {
                     "name": "StopIntent",
@@ -354,33 +430,42 @@
             ],
             "delegationStrategy": "ALWAYS"
         },
-        "prompts": [{
+        "prompts": [
+            {
                 "id": "Confirm.Intent.1537309296967",
-                "variations": [{
-                    "type": "PlainText",
-                    "value": "Do you really want to buy it?"
-                }]
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Do you really want to buy it?"
+                    }
+                ]
             },
             {
                 "id": "Confirm.Intent.1005869010209",
-                "variations": [{
-                    "type": "PlainText",
-                    "value": "Do you want to save it?"
-                }]
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Do you want to save it?"
+                    }
+                ]
             },
             {
                 "id": "Elicit.Slot.1005869010209.1403602672043",
-                "variations": [{
-                    "type": "PlainText",
-                    "value": "What is your name?"
-                }]
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What is your name?"
+                    }
+                ]
             },
             {
                 "id": "Confirm.Intent.1213643633892",
-                "variations": [{
-                    "type": "PlainText",
-                    "value": "Are you sure you want to cancel a purchase?"
-                }]
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Are you sure you want to cancel a purchase?"
+                    }
+                ]
             }
         ]
     }

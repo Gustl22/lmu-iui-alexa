@@ -31,8 +31,8 @@ async function getUser(user_id) {
     return (await query(sql))[0];
 }
 
-async function createNewUser(name) { //you can push here any aruments that you need, such as name, surname, age...
-    const sql = `INSERT INTO user (name) VALUES (${name})`;
+async function createNewUser(name, age) { //you can push here any aruments that you need, such as name, surname, age...
+    const sql = `INSERT INTO user (name, age) VALUES ('${name}', ${age})`;
     return (await query(sql));
 
 }
@@ -172,7 +172,7 @@ async function getEmotion() {
     return 'neutral';
 }
 
-async function setMode(mode = {'trainProfile': true}) {
+async function setMode(mode = { 'trainProfile': true }) {
     try {
         return Boolean(await postData('http://localhost:3002/api/vending/save', mode));
     } catch (e) {
@@ -189,7 +189,7 @@ async function postData(url = '', data = {}) {
         credentials: 'same-origin', // include, *same-origin, omit
         headers: {
             'Content-Type': 'application/json'
-            // 'Content-Type': 'application/x-www-form-urlencoded',
+                // 'Content-Type': 'application/x-www-form-urlencoded',
         },
         redirect: 'follow', // manual, *follow, error
         referrer: 'no-referrer', // no-referrer, *client
@@ -201,7 +201,7 @@ async function postData(url = '', data = {}) {
     if (contentType && contentType.indexOf("application/json") !== -1) {
         return await response.json() // parses JSON response into native JavaScript objects
     }
-    if(response.status === 204)
+    if (response.status === 204)
         return false;
     return response;
 }
@@ -279,10 +279,7 @@ const CategoryOfDecisionIntentHandler = {
             Alexa.getIntentName(handlerInput.requestEnvelope) === 'category_of_decision';
     },
     async handle(handlerInput) {
-        //let aisystem = handlerInput.requestEnvelope.request.intent.slots.category_of_product.value;
         let slotName = handlerInput.requestEnvelope.request.intent.slots.category_of_product.resolutions.resolutionsPerAuthority[0].values[0].value.name;
-        /*if (aisystem === 1) var prodType = 'snacks';
-         if (aisystem === 2) prodType = "drinks";*/
         const products = await getProductsWithCategory(slotName);
         const emotion = await getEmotion();
         const productsWithEmotions = await getProductsWithCategoryAndEmotion(slotName, emotion);
@@ -315,11 +312,13 @@ const RecordFaceHandler = {
     },
     async handle(handlerInput) {
         let slotName = handlerInput.requestEnvelope.request.intent.slots.name.value;
+        let slotAge = handlerInput.requestEnvelope.request.intent.slots.age.value;
         let success = false;
         let errorMessage;
         if (slotName) {
             try {
-                success = await setMode({'trainProfile': slotName});
+                success = await setMode({ 'trainProfile': slotName });
+                success = createNewUser(slotName, slotAge); //add new user in database
             } catch (e) {
                 errorMessage = e;
             }

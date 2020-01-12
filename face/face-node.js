@@ -55,7 +55,11 @@ async function query(sql, params = []) {
 app.post('/api/vending/save', async function(req, res) {
     if(req.body.hasOwnProperty('expressions')) {
         await saveVendingState(getVendingId(req), 'expressions', req.body.expressions);
-    } else if(req.body.hasOwnProperty('trainProfile')) {
+    }
+    if(req.body.hasOwnProperty('userName')) {
+        await saveVendingState(getVendingId(req), 'userName', req.body.userName);
+    }
+    if(req.body.hasOwnProperty('trainProfile')) {
         await saveVendingState(getVendingId(req), 'trainProfile', req.body.trainProfile);
         // Wait for saved profile from client
         if (req.body.trainProfile) {
@@ -134,6 +138,7 @@ async function getUsers() {
 }
 
 async function createOrUpdateUser(name, surname = null, age = null, faceData = null) { //you can push here any aruments that you need, such as name, surname, age...
+    name = name.toLowerCase();
     const sql = `
 INSERT INTO user (name, surname, age, faceData) VALUES (?,?,?,?) 
 ON DUPLICATE KEY UPDATE surname = ? , age = ?, faceData = ?`;

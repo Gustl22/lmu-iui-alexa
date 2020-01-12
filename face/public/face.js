@@ -81,14 +81,22 @@ video.addEventListener('play', async () => {
                 }
 
                 if (labeledDescriptors.length > 0) {
+                    let singleMatch = null;
+
                     const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors);
                     detections.forEach(fd => {
                         const maxDescriptorDistance = 0.6;
                         const bestMatch = faceMatcher.findBestMatch(fd.descriptor, maxDescriptorDistance);
                         //console.log(bestMatch.toString());
                         fd.bestMatch = bestMatch;
+                        singleMatch = bestMatch; // TODO try to work better with multiple persons
                     });
+
+                    if(singleMatch) {
+                        await postData('/api/vending/save', {'userName': singleMatch._label});
+                    }
                 }
+
 
                 const resizedDetections = faceapi.resizeResults(detections, displaySize);
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);

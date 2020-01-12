@@ -3,6 +3,7 @@
 // session persistence, api calls, and more.
 const Alexa = require('ask-sdk-core');
 const fetch = require("node-fetch");
+const moment = require("moment");
 // const Products = require("./products");
 const config = require("../config");
 
@@ -46,7 +47,7 @@ const EMOTION_DISGUSTED = 'disgusted';
 const EMOTION_SURPRISED = 'surprised';
 
 async function getPrice(search) {
-    let product = await getProduct(search);
+    let product = await getProductByName(search);
     console.log(search);
     console.log(product);
     if (product) {
@@ -57,9 +58,9 @@ async function getPrice(search) {
     }
 }
 
-async function getProduct(search) {
-    const sql = `SELECT * FROM product WHERE LOWER(name) LIKE '${search}' LIMIT 1`;
-    return (await query(sql))[0];
+async function getProductByName(name) {
+    const sql = `SELECT * FROM product WHERE LOWER(name) LIKE ? LIMIT 1`;
+    return (await query(sql, [name]))[0];
 
     // for (let key in Products) {
     //     let product = Products[key];
@@ -77,22 +78,27 @@ async function getProduct(search) {
     // return false;
 }
 
+async function getUserByName(name) {
+    const sql = `SELECT * FROM user WHERE LOWER(name) LIKE ? LIMIT 1`;
+    return (await query(sql, [name]))[0] || null;
+}
+
 async function getProductsWithCategoryAndEmotion(category, emotion) {
-    const sql = `SELECT p.name, p.product_ID, p.brand, p.price, p.quantity, p.energy, p.weight, p.emotion, p.smallImageUrl, p.largeImageUrl, p.state
+    const sql = `SELECT p.name, p.productID, p.brand, p.price, p.quantity, p.energy, p.weight, p.emotion, p.smallImageUrl, p.largeImageUrl, p.state
 FROM product p
-JOIN product_category pc ON p.product_ID = pc.productID 
+JOIN product_category pc ON p.productID = pc.productID 
 JOIN category c ON pc.categoryID = c.categoryID
-WHERE c.name = '${category}' AND p.emotion = '${emotion}'`; //TODO: SQL Abfrage für Emotion anpassen
-    return await query(sql);
+WHERE c.name = ? AND p.emotion = ?`; //TODO: SQL Abfrage für Emotion anpassen
+    return await query(sql, [category, emotion]);
 }
 
 async function getProductsWithCategory(category) {
-    const sql = `SELECT p.name, p.product_ID, p.brand, p.price, p.quantity, p.energy, p.weight, p.emotion, p.smallImageUrl, p.largeImageUrl, p.state
+    const sql = `SELECT p.name, p.productID, p.brand, p.price, p.quantity, p.energy, p.weight, p.emotion, p.smallImageUrl, p.largeImageUrl, p.state
 FROM product p
-JOIN product_category pc ON p.product_ID = pc.productID 
+JOIN product_category pc ON p.productID = pc.productID 
 JOIN category c ON pc.categoryID = c.categoryID
-WHERE c.name = '${category}'`;
-    return await query(sql);
+WHERE c.name = ?`;
+    return await query(sql, [category]);
 
     // let productList = [];
     //let productList = type;
@@ -111,13 +117,25 @@ WHERE c.name = '${category}'`;
     // return productList;
 }
 
-function getNameFromFace() {  //TODO: recognize the Face and return the matching name
-    let name = "placeholderName";
-    return name
+async function saveOrder(productID, userID) {
+    const sql = "INSERT INTO `order` (productID, userID, dateTime) VALUES (?,?,?)"; //TODO: SQL Abfrage für Emotion anpassen
+    return await query(sql, [productID, userID, moment().format('YYYY-MM-DD HH:mm:ss')]);
 }
 
-function getPersonalProductRecommendation(name) {
-    return "placeholderProduct"
+async function getPersonalProductRecommendation(userID) {
+    const sql = `SELECT o.productID, p.name, COUNT(o.productID)
+FROM \`order\` o
+JOIN product p ON p.productID = o.productID
+WHERE o.userID = ?
+GROUP BY o.productID
+ORDER BY COUNT(o.productID) DESC`;
+
+    const productList = await query(sql, [userID]);
+
+    if(productList){
+        return productList[0];
+    }
+    return null;
 }
 
 const LaunchRequestHandler = {
@@ -126,7 +144,7 @@ const LaunchRequestHandler = {
     },
     async handle(handlerInput) {
         let speakOutput = 'Welcome to our vending machine!';
-        const emotion = await getEmotion();
+        const emotion = await getCurrentEmotion();
         if (emotion == EMOTION_HAPPY) {
             speakOutput += ' Looks like you are very ' + emotion + ' today!';
         } else if (emotion == EMOTION_ANGRY) {
@@ -144,7 +162,7 @@ const LaunchRequestHandler = {
     }
 };
 
-async function getEmotion() {
+async function getCurrentEmotion() {
     try {
         const expressions = await postData('http://localhost:3002/api/vending/load', {
             'vendingId': 0,
@@ -165,8 +183,22 @@ async function getEmotion() {
     } catch (e) {
         throw "Maybe you haven't turned on the face detection server." + e;
     }
+}
 
-    return 'neutral';
+async function getCurrentUser() {
+    try {
+        let user = null;
+        const userName = await postData('http://localhost:3002/api/vending/load', {
+            'vendingId': 0,
+            'prop': 'userName'
+        });
+        if(userName)
+            user = await getUserByName(userName);
+
+        return user;
+    } catch (e) {
+        throw "Maybe you haven't turned on the face detection server." + e;
+    }
 }
 
 async function setMode(mode = { 'trainProfile': true }) {
@@ -229,7 +261,7 @@ const BuyIntentHandler = {
         // TODO allow every product in db
         const intent = handlerInput.requestEnvelope.request.intent;
         let productName = handlerInput.requestEnvelope.request.intent.slots.product.value;
-        let product = await getProduct(productName);
+        let product = await getProductByName(productName);
         let responseBuilder = handlerInput.responseBuilder;
         let speakOutput;
         if (product) {
@@ -237,7 +269,14 @@ const BuyIntentHandler = {
             responseBuilder = responseBuilder.addDelegateDirective({
                 name: 'consent',
                 confirmationStatus: 'NONE',
-                slots: {}
+                slots: {
+                    "product": {
+                        "name": "product",
+                        "value": product.name,
+                        //"resolutions": {},
+                        "confirmationStatus": "NONE"
+                    }
+                }
             });
         } else {
             speakOutput = "Sorry, we don't sell this product.";
@@ -278,7 +317,7 @@ const CategoryOfDecisionIntentHandler = {
     async handle(handlerInput) {
         let slotName = handlerInput.requestEnvelope.request.intent.slots.category_of_product.resolutions.resolutionsPerAuthority[0].values[0].value.name;
         const products = await getProductsWithCategory(slotName);
-        const emotion = await getEmotion();
+        const emotion = await getCurrentEmotion();
         const productsWithEmotions = await getProductsWithCategoryAndEmotion(slotName, emotion);
 
         // Extract product name, implode the array, and replace & with and, as alexa doesn't understand &.
@@ -335,17 +374,38 @@ const AskToRememberFaceHandler = {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
             Alexa.getIntentName(handlerInput.requestEnvelope) === 'ask_to_remember_face';
     },
-    handle(handlerInput) {
-        const name_of_face =  getNameFromFace();
-        const recommended_product = getPersonalProductRecommendation(name_of_face);
-        const speakOutput = `Hello ${name_of_face}. Do you want to buy ${recommended_product}` ;
+    async handle(handlerInput) {
+        const user = await getCurrentUser();
+        if(user) {
+            const product = await getPersonalProductRecommendation(user.userID);
+            const speakOutput = `Of course ${user.name}. I think you often chose ${product.name}.` ;
 
+            return handlerInput.responseBuilder
+                .addDelegateDirective({
+                    name: 'consent',
+                    confirmationStatus: 'NONE',
+                    slots: {
+                        "product": {
+                            "name": "product",
+                            "value": product.name,
+                            //"resolutions": {},
+                            "confirmationStatus": "NONE"
+                        }
+                    }
+                })
+                .speak(speakOutput)
+                .reprompt(speakOutput)
+                .getResponse();
+        }
+
+        const speakOutput = "Sorry, I don't know you. Do you want that I remember you the next time?";
+        // Todo delegative and then to face recognition.
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
             .getResponse();
-    }
 
+    }
 };
 
 const HowMuchIntentHandler = {
@@ -372,8 +432,7 @@ const ConsentIntentHandler = {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
             Alexa.getIntentName(handlerInput.requestEnvelope) === 'consent';
     },
-    handle(handlerInput) {
-
+    async handle(handlerInput) {
         speakOutput = "No confirmation";
 
         var confirm = handlerInput.requestEnvelope.request.intent.confirmationStatus;
@@ -381,8 +440,12 @@ const ConsentIntentHandler = {
 
         if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'DENIED')
             speakOutput = "It's a pity! Then choose something else";
-        if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED')
-            speakOutput = 'You bought it. Bon appetit!';
+        else if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED') {
+            const productName = handlerInput.requestEnvelope.request.intent.slots.product.value;
+            console.log(productName);
+            await saveOrder((await getProductByName(productName)).productID, (await getCurrentUser()).userID);
+            speakOutput = `You bought the ${productName}. Bon appetit!`;
+        }
 
         return handlerInput.responseBuilder
             .speak(speakOutput)

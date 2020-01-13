@@ -181,7 +181,7 @@ async function getCurrentEmotion() {
 
         return expressionMax;
     } catch (e) {
-        throw "Maybe you haven't turned on the face detection server." + e;
+        throw "Maybe you haven't turned on the face detection server (0)." + e;
     }
 }
 
@@ -197,7 +197,7 @@ async function getCurrentUser() {
 
         return user;
     } catch (e) {
-        throw "Maybe you haven't turned on the face detection server." + e;
+        throw "Maybe you haven't turned on the face detection server (1)." + e;
     }
 }
 
@@ -205,7 +205,7 @@ async function setMode(mode = { 'trainProfile': true }) {
     try {
         return Boolean(await postData('http://localhost:3002/api/vending/save', mode));
     } catch (e) {
-        throw "Maybe you haven't turned on the face detection server. " + e;
+        throw "Maybe you haven't turned on the face detection server (2). " + e;
     }
 }
 
@@ -278,29 +278,29 @@ const BuyIntentHandler = {
                     }
                 }
             });
+
+            if (product.largeImageUrl) {
+                // console.log(product.largeImageUrl);
+                responseBuilder = responseBuilder.withStandardCard(
+                    product.name,
+                    'Price: ' + product.price +
+                    "\nBrand: " + product.brand,
+                    null,
+                    product.largeImageUrl
+                );
+                // cards are not updated:
+                // https://stackoverflow.com/questions/53269516/alexa-not-showing-card-despite-being-present-in-json
+
+                // responseBuilder = responseBuilder
+                //     .reprompt(speakOutput)
+                //     .withSimpleCard(
+                //     product.name,
+                //     'Price: ' + product.price
+                //     + "\nBrand: " + product.brand
+                // );
+            }
         } else {
             speakOutput = "Sorry, we don't sell this product.";
-        }
-
-        if (product.largeImageUrl) {
-            // console.log(product.largeImageUrl);
-            responseBuilder = responseBuilder.withStandardCard(
-                product.name,
-                'Price: ' + product.price +
-                "\nBrand: " + product.brand,
-                null,
-                product.largeImageUrl
-            );
-            // cards are not updated:
-            // https://stackoverflow.com/questions/53269516/alexa-not-showing-card-despite-being-present-in-json
-
-            // responseBuilder = responseBuilder
-            //     .reprompt(speakOutput)
-            //     .withSimpleCard(
-            //     product.name,
-            //     'Price: ' + product.price
-            //     + "\nBrand: " + product.brand
-            // );
         }
 
         responseBuilder = responseBuilder.speak(speakOutput);

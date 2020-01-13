@@ -85,7 +85,7 @@ video.addEventListener('play', async () => {
 
                     const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors);
                     detections.forEach(fd => {
-                        const maxDescriptorDistance = 0.6;
+                        const maxDescriptorDistance = 0.9;
                         const bestMatch = faceMatcher.findBestMatch(fd.descriptor, maxDescriptorDistance);
                         //console.log(bestMatch.toString());
                         fd.bestMatch = bestMatch;
@@ -120,7 +120,7 @@ async function setMode(mode = {'trainProfile': true}) {
     try {
         return Boolean(await postData('/api/vending/save', mode));
     } catch (e) {
-        throw "Maybe you haven't turned on the face detection server. " + e;
+        throw "Could not set train profile. " + e;
     }
 }
 

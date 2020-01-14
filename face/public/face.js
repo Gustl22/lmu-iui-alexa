@@ -61,7 +61,7 @@ video.addEventListener('play', async () => {
                 if (!profiles[trainProfil])
                     profiles[trainProfil] = {descriptors: []};
                 profiles[trainProfil].descriptors.push(detection.descriptor);
-                if (profiles[trainProfil].descriptors.length > 2) {
+                if (profiles[trainProfil].descriptors.length > 4) {
                     await setMode({'trainProfile': false});
                 }
             }
@@ -83,10 +83,10 @@ video.addEventListener('play', async () => {
                 if (labeledDescriptors.length > 0) {
                     let singleMatch = null;
 
-                    const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors);
+                    const maxDescriptorDistance = 0.5; // the higher, the more imprecise
+                    const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, maxDescriptorDistance);
                     detections.forEach(fd => {
-                        const maxDescriptorDistance = 0.9;
-                        const bestMatch = faceMatcher.findBestMatch(fd.descriptor, maxDescriptorDistance);
+                        const bestMatch = faceMatcher.findBestMatch(fd.descriptor);
                         //console.log(bestMatch.toString());
                         fd.bestMatch = bestMatch;
                         singleMatch = bestMatch; // TODO try to work better with multiple persons

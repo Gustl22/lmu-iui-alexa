@@ -89,6 +89,7 @@
                         }
                     ],
                     "samples": [
+                        "buy a {product}",
                         "I want {amazon_food} {amazon_drink} {product}",
                         "I want {product}",
                         "Give me a {product}",
@@ -213,6 +214,11 @@
                         "hi i'm back",
                         "I'm back"
                     ]
+                },
+                {
+                    "name": "RecordConsentIntent",
+                    "slots": [],
+                    "samples": []
                 }
             ],
             "types": [
@@ -421,6 +427,13 @@
                             "prompts": {
                                 "elicitation": "Elicit.Slot.1005869010209.1403602672043"
                             }
+                        },
+                        {
+                            "name": "age",
+                            "type": "AMAZON.NUMBER",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
                         }
                     ]
                 },
@@ -429,6 +442,14 @@
                     "confirmationRequired": true,
                     "prompts": {
                         "confirmation": "Confirm.Intent.1213643633892"
+                    },
+                    "slots": []
+                },
+                {
+                    "name": "RecordConsentIntent",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.874890412429"
                     },
                     "slots": []
                 }
@@ -469,6 +490,15 @@
                     {
                         "type": "PlainText",
                         "value": "Are you sure you want to cancel a purchase?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.874890412429",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Do you want to create a profile?"
                     }
                 ]
             }

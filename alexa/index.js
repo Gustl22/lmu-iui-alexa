@@ -123,6 +123,8 @@ async function saveOrder(productID, userID) {
 }
 
 async function getPersonalProductRecommendation(userID) {
+    //TODO may propose drinks, if no were bought recently. Or food, if only drinks were bought recently.
+
     const sql = `SELECT o.productID, p.name, COUNT(o.productID)
 FROM \`order\` o
 JOIN product p ON p.productID = o.productID
@@ -143,7 +145,23 @@ const LaunchRequestHandler = {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     async handle(handlerInput) {
-        let speakOutput = 'Welcome to our vending machine!';
+        let speakOutput = '';
+        const user = await getCurrentUser();
+        if(user) {
+            speakOutput += ` Hi ${user.name}! Welcome to our Vending Machine!`
+        } else {
+            speakOutput += "Welcome to our Vending Machine! I don't know you yet.";
+            return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt(speakOutput)
+                .addDelegateDirective({
+                    name: 'RecordConsentIntent',
+                    confirmationStatus: 'NONE',
+                    slots: {}
+                })
+                .getResponse();
+        }
+
         const emotion = await getCurrentEmotion();
         if (emotion == EMOTION_HAPPY) {
             speakOutput += ' Looks like you are very ' + emotion + ' today!';
@@ -235,7 +253,11 @@ async function postData(url = '', data = {}) {
     return response;
 }
 
-const WantToBuySomethingIntentHandler = {
+/**
+ * Called when you ask for advice.
+ * Offers drinks or snacks and asks back what you want.
+ */
+const AdviceIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
             Alexa.getIntentName(handlerInput.requestEnvelope) === 'AdviceIntent';
@@ -360,11 +382,22 @@ const RecordFaceHandler = {
             }
         }
         console.log(slotName);
-        let speakOutput = success ? "I saved your profile, " + slotName + '.' :
-            "I'm sorry, your profile couldn't be saved. " + errorMessage + ". Try again!";
+        let speakOutput;
+        if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'DENIED')
+            speakOutput = "It's a pity. You can try again if you want.";
+        else if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED') {
+            speakOutput = success ? "I saved your profile, " + slotName + '.' :
+                "I'm sorry, your profile couldn't be saved. " + errorMessage + ". Try again!";
+        }
+
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
+            .addDelegateDirective({
+                name: 'AdviceIntent',
+                confirmationStatus: 'NONE',
+                slots: {}
+            })
             .getResponse();
     }
 };
@@ -423,6 +456,32 @@ const HowMuchIntentHandler = {
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
+            .getResponse();
+    }
+};
+
+const RecordConsentIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'RecordConsentIntent';
+    },
+    async handle(handlerInput) {
+        let speakOutput;
+        if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'DENIED')
+            speakOutput = "It's a pity. Then I can't provide personal recommendations for you. But you still can buy something.";
+        else if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED') {
+            return handlerInput.responseBuilder
+                .addDelegateDirective({
+                    name: 'record_face',
+                    confirmationStatus: 'NONE',
+                    slots: {}
+                })
+                .getResponse();
+        }
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
             .getResponse();
     }
 };
@@ -556,10 +615,11 @@ exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
         BuyIntentHandler,
-        WantToBuySomethingIntentHandler,
+        AdviceIntentHandler,
         CategoryOfDecisionIntentHandler,
         HowMuchIntentHandler,
         ConsentIntentHandler,
+        RecordConsentIntentHandler,
         StopIntentHandler,
         HelpIntentHandler,
         RecordFaceHandler,

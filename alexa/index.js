@@ -168,7 +168,7 @@ const LaunchRequestHandler = {
         } else if (emotion == EMOTION_ANGRY) {
             speakOutput += ' I think your\'re angry! Tell me about your secrets!';
         } else if (emotion == EMOTION_SAD) {
-            speakOutput += ' I think your\'re sad! How can I cheer you up?';
+            speakOutput += ' You look a bit down!'; //How can I cheer you up?
         } else if (emotion == EMOTION_SURPRISED) {
             speakOutput += ' Why are you suprised? What happend?';
         }

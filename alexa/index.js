@@ -347,7 +347,12 @@ const CategoryOfDecisionIntentHandler = {
         const productsWithEmotionsStr = productsWithEmotions.map(product => product.name).join(', ').replace('&', ' and ');
         let speakOutput = '';
         if (emotion != EMOTION_NEUTRAL) {
-            speakOutput += 'You look ' + emotion + '. ';
+            if (emotion == "sad") {
+                speakOutput += 'You look a bit down. ';
+            } else {
+                speakOutput += 'You look ' + emotion + '. ';
+            }
+            
             speakOutput += `I think you need this: ` + productsWithEmotionsStr;
             speakOutput += `. Additionally, we offer the following ${slotName}: ` + productsStr + ". Which do you choose?";
         } else {

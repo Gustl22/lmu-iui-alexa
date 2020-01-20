@@ -391,7 +391,7 @@ const RecordFaceHandler = {
         if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'DENIED')
             speakOutput = "It's a pity. You can try again if you want.";
         else if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED') {
-            speakOutput = success ? "I saved your profile, " + slotName + '.' :
+            speakOutput = success ? "I saved your profile, " + slotName + '. What do you want to buy?' :
                 "I'm sorry, your profile couldn't be saved. " + errorMessage + ". Try again!";
         }
 
@@ -473,7 +473,7 @@ const RecordConsentIntentHandler = {
     async handle(handlerInput) {
         let speakOutput;
         if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'DENIED')
-            speakOutput = "It's a pity. Then I can't provide personal recommendations for you. But you still can buy something.";
+            speakOutput = "It's a pity. Then I can't provide personal recommendations for you. But you still can buy something. Are you hungry or thirsty?";
         else if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED') {
             return handlerInput.responseBuilder
                 .addDelegateDirective({

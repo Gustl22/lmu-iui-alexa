@@ -263,15 +263,17 @@
                         },
                         {
                             "name": {
-                                "value": "acidulated Water"
+                                "value": "acidulated Water",
+                                "synonyms": [
+                                    "soda",
+                                    "sparkling water",
+                                    "carbonated water"
+                                ]
                             }
                         },
                         {
                             "name": {
-                                "value": "still Water",
-                                "synonyms": [
-                                    "soda"
-                                ]
+                                "value": "still Water"
                             }
                         },
                         {

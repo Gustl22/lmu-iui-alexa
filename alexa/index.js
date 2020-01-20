@@ -117,6 +117,15 @@ WHERE c.name = ?`;
     // return productList;
 }
 
+async function getCategoriesOfProduct(productID) {
+    const sql = `SELECT c.*
+                 FROM product p
+                          JOIN product_category pc ON p.productID = pc.productID
+                          JOIN category c ON pc.categoryID = c.categoryID
+                 WHERE p.productID = ?`;
+    return await query(sql, [productID]);
+}
+
 async function saveOrder(productID, userID) {
     const sql = "INSERT INTO `order` (productID, userID, dateTime) VALUES (?,?,?)"; //TODO: SQL Abfrage für Emotion anpassen
     return await query(sql, [productID, userID, moment().format('YYYY-MM-DD HH:mm:ss')]);
@@ -134,7 +143,7 @@ ORDER BY COUNT(o.productID) DESC`;
 
     const productList = await query(sql, [userID]);
 
-    if(productList){
+    if(productList && productList.length > 0){
         return productList[0];
     }
     return null;
@@ -149,6 +158,28 @@ const LaunchRequestHandler = {
         const user = await getCurrentUser();
         if(user) {
             speakOutput += ` Hi ${user.name}! Welcome to our Vending Machine!`
+            const product = await getPersonalProductRecommendation(user.userID);
+            if(product) {
+                speakOutput += `I think you often chose ${product.name} at this time.` ;
+
+                return handlerInput.responseBuilder
+                    .addDelegateDirective({
+                        name: 'consent',
+                        confirmationStatus: 'NONE',
+                        slots: {
+                            "product": {
+                                "name": "product",
+                                "value": product.name,
+                                //"resolutions": {},
+                                "confirmationStatus": "NONE"
+                            }
+                        }
+                    })
+                    .speak(speakOutput)
+                    .reprompt(speakOutput)
+                    .getResponse();
+            }
+
         } else {
             speakOutput += "Welcome to our Vending Machine! I don't know you yet.";
             return handlerInput.responseBuilder
@@ -503,12 +534,16 @@ const ConsentIntentHandler = {
         console.log(confirm);
 
         if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'DENIED')
-            speakOutput = "It's a pity! Then choose something else";
+            speakOutput = "It's a pity! Then choose something else.";
         else if (handlerInput.requestEnvelope.request.intent.confirmationStatus === 'CONFIRMED') {
             const productName = handlerInput.requestEnvelope.request.intent.slots.product.value;
             console.log(productName);
-            await saveOrder((await getProductByName(productName)).productID, (await getCurrentUser()).userID);
-            speakOutput = `You bought the ${productName}. Bon appetit!`;
+            const user = await getCurrentUser();
+            const product = await getProductByName(productName);
+            const categories = await getCategoriesOfProduct(product.productID)
+            const isDrink = categories.map(c => c.name).includes('drink');
+            await saveOrder(product.productID, user ? user.userID : null);
+            speakOutput = `You bought the ${productName}. ${isDrink ? 'Cheers' : 'Bon appetit'}!`;
         }
 
         return handlerInput.responseBuilder

@@ -318,7 +318,11 @@ const BuyIntentHandler = {
         let responseBuilder = handlerInput.responseBuilder;
         let speakOutput;
         if (product) {
+            const user = await getCurrentUser();
             speakOutput = 'It costs ' + product.price + ' €. ';
+            if(!user) {
+                speakOutput += "As you don't have a profile yet, you have to pay with cash. "
+            }
             responseBuilder = responseBuilder.addDelegateDirective({
                 name: 'consent',
                 confirmationStatus: 'NONE',
@@ -374,7 +378,13 @@ const CategoryOfDecisionIntentHandler = {
         const productsWithEmotions = await getProductsWithCategoryAndEmotion(slotName, emotion);
 
         // Extract product name, implode the array, and replace & with and, as alexa doesn't understand &.
-        const productsStr = products.map(product => product.name).join(', ').replace('&', ' and ');
+        let productsStr;
+        if(products.length > 1) {
+            productsStr = products.slice(0, -1).map(product => product.name).join(', ').replace('&', ' and ');
+            productsStr += ' and ' + products[products.length - 1].name;
+        } else {
+            productsStr = products[0];
+        }
         const productsWithEmotionsStr = productsWithEmotions.map(product => product.name).join(', ').replace('&', ' and ');
         let speakOutput = '';
         if (emotion != EMOTION_NEUTRAL) {

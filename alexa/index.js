@@ -4,6 +4,7 @@
 const Alexa = require('ask-sdk-core');
 const fetch = require("node-fetch");
 const moment = require("moment");
+const TemporalSimilarity = require('./TemporalSimilarity.js');
 // const Products = require("./products");
 const config = require("../config");
 
@@ -61,21 +62,11 @@ async function getPrice(search) {
 async function getProductByName(name) {
     const sql = `SELECT * FROM product WHERE LOWER(name) LIKE ? LIMIT 1`;
     return (await query(sql, [name]))[0];
+}
 
-    // for (let key in Products) {
-    //     let product = Products[key];
-    //     // console.log(product);
-    //     // for(let prop in product) {
-    //     //     res = res + prop + ';';
-    //     // }
-    //     if (product.hasOwnProperty('name')) {
-    //         // res = res + product.name + ';';
-    //         if (product.name.toLowerCase() === search) {
-    //             return product.price;
-    //         }
-    //     }
-    // }
-    // return false;
+async function getProductById(productId) {
+    const sql = `SELECT * FROM product WHERE productID = ?`;
+    return (await query(sql, [productId]))[0];
 }
 
 async function getUserByName(name) {
@@ -83,8 +74,28 @@ async function getUserByName(name) {
     return (await query(sql, [name]))[0] || null;
 }
 
+async function getOrdersByUserIdInDateTime(userID, dateTime){
+    const sql = `SELECT o.* FROM \`order\` o WHERE o.userID = ? AND o.dateTime > ?`;
+    return (await query(sql, [userID, dateTime])) || null;
+}
+
+async function getPopularProductByUserId(userID) {
+    const sql = `SELECT o.productID, p.name, COUNT(o.productID)
+FROM \`order\` o
+JOIN product p ON p.productID = o.productID
+WHERE o.userID = ?
+GROUP BY o.productID
+ORDER BY COUNT(o.productID) DESC`;
+    const productList = await query(sql, [userID]);
+
+    if(productList && productList.length > 0){
+        return productList[0];
+    }
+    return null;
+}
+
 async function getProductsWithCategoryAndEmotion(category, emotion) {
-    const sql = `SELECT p.name, p.productID, p.brand, p.price, p.quantity, p.energy, p.weight, p.emotion, p.smallImageUrl, p.largeImageUrl, p.state
+    const sql = `SELECT p.*
 FROM product p
 JOIN product_category pc ON p.productID = pc.productID 
 JOIN category c ON pc.categoryID = c.categoryID
@@ -93,7 +104,7 @@ WHERE c.name = ? AND p.emotion = ?`; //TODO: SQL Abfrage für Emotion anpassen
 }
 
 async function getProductsWithCategory(category) {
-    const sql = `SELECT p.name, p.productID, p.brand, p.price, p.quantity, p.energy, p.weight, p.emotion, p.smallImageUrl, p.largeImageUrl, p.state
+    const sql = `SELECT p.*
 FROM product p
 JOIN product_category pc ON p.productID = pc.productID 
 JOIN category c ON pc.categoryID = c.categoryID
@@ -134,19 +145,44 @@ async function saveOrder(productID, userID) {
 async function getPersonalProductRecommendation(userID) {
     //TODO may propose drinks, if no were bought recently. Or food, if only drinks were bought recently.
 
-    const sql = `SELECT o.productID, p.name, COUNT(o.productID)
-FROM \`order\` o
-JOIN product p ON p.productID = o.productID
-WHERE o.userID = ?
-GROUP BY o.productID
-ORDER BY COUNT(o.productID) DESC`;
+    /*
+    * Get the products of the past four weeks of this user.
+    * Calculate score of each product compared to current time.
+    * Sum up scores.
+    * Take product with the highest score.
+    */
 
-    const productList = await query(sql, [userID]);
+    const fourWeeksAgo = moment().subtract(4, 'weeks').format('YYYY-MM-DD HH:mm:ss');
+    const orders = await getOrdersByUserIdInDateTime(userID, fourWeeksAgo);
 
-    if(productList && productList.length > 0){
-        return productList[0];
+    const productScores = {};
+
+    orders.forEach(order => {
+        if(order.dateTime) {
+            const temporalSimilarity = new TemporalSimilarity(new Date(order.dateTime.toString().replace(/-/g,"/")));
+            if(productScores.hasOwnProperty(order.productID)) {
+                productScores[order.productID] += temporalSimilarity.getScore();
+            } else {
+                productScores[order.productID] = temporalSimilarity.getScore();
+            }
+        }
+    });
+
+    if(true) {
+        for (let productId in productScores) {
+            console.log('Product: ' + (await getProductById(productId)).name + ' \t Score:' + productScores[productId]);
+        }
     }
-    return null;
+
+    let bestScore = 0;
+    let bestProductId = null;
+    for (let productId in productScores) {
+        if (productScores.hasOwnProperty(productId) && bestScore < productScores[productId]) {
+            bestProductId = productId;
+            bestScore = productScores[productId];
+        }
+    }
+    return await getProductById(bestProductId)
 }
 
 const LaunchRequestHandler = {
@@ -157,7 +193,7 @@ const LaunchRequestHandler = {
         let speakOutput = '';
         const user = await getCurrentUser();
         if(user) {
-            speakOutput += ` Hi ${user.name}! Welcome to our Vending Machine!`
+            speakOutput += ` Hi ${user.name}! Welcome to our Vending Machine!`;
             const product = await getPersonalProductRecommendation(user.userID);
             if(product) {
                 speakOutput += `I think you often chose ${product.name} at this time.` ;
@@ -194,13 +230,13 @@ const LaunchRequestHandler = {
         }
 
         const emotion = await getCurrentEmotion();
-        if (emotion == EMOTION_HAPPY) {
+        if (emotion === EMOTION_HAPPY) {
             speakOutput += ' Looks like you are very ' + emotion + ' today!';
-        } else if (emotion == EMOTION_ANGRY) {
+        } else if (emotion === EMOTION_ANGRY) {
             speakOutput += ' I think your\'re angry! Tell me about your secrets!';
-        } else if (emotion == EMOTION_SAD) {
+        } else if (emotion === EMOTION_SAD) {
             speakOutput += ' You look a bit down!'; //How can I cheer you up?
-        } else if (emotion == EMOTION_SURPRISED) {
+        } else if (emotion === EMOTION_SURPRISED) {
             speakOutput += ' Why are you suprised? What happend?';
         }
         return handlerInput.responseBuilder
@@ -387,8 +423,8 @@ const CategoryOfDecisionIntentHandler = {
         }
         const productsWithEmotionsStr = productsWithEmotions.map(product => product.name).join(', ').replace('&', ' and ');
         let speakOutput = '';
-        if (emotion != EMOTION_NEUTRAL) {
-            if (emotion == "sad") {
+        if (emotion !== EMOTION_NEUTRAL) {
+            if (emotion === "sad") {
                 speakOutput += 'You look a bit down. ';
             } else {
                 speakOutput += 'You look ' + emotion + '. ';
